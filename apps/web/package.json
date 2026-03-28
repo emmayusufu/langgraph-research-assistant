@@ -1,5 +1,5 @@
 {
-  "name": "frontend",
+  "name": "@repo/web",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -30,6 +30,7 @@
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.5",
     "prettier": "^3.8.1",
-    "typescript": "^5"
+    "typescript": "^5",
+    "@repo/tsconfig": "*"
   }
 }
