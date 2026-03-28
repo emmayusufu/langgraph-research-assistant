@@ -1,5 +1,4 @@
 {
-  "extends": "@repo/tsconfig/base.json",
   "compilerOptions": {
     "target": "ES2017",
     "lib": ["dom", "dom.iterable", "esnext"],
@@ -9,6 +8,13 @@
     "moduleResolution": "bundler",
     "jsx": "react-jsx",
     "incremental": true,
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "moduleDetection": "force",
     "plugins": [
       {
         "name": "next"
