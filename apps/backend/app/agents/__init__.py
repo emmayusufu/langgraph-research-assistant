@@ -5,9 +5,9 @@ from app.agents.supervisor import supervisor_node
 from app.agents.writer import writer_node
 
 __all__ = [
+    "coder_node",
     "planner_node",
     "researcher_node",
-    "coder_node",
-    "writer_node",
     "supervisor_node",
+    "writer_node",
 ]

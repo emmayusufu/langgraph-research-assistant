@@ -47,13 +47,9 @@ def writer_node(state: dict) -> dict:
     code_json = json.dumps(state["code_results"][:10], indent=2)
 
     if state["output_mode"] == "report":
-        prompt = REPORT_PROMPT.format(
-            research_results=research_json, code_results=code_json
-        )
+        prompt = REPORT_PROMPT.format(research_results=research_json, code_results=code_json)
     else:
-        prompt = CHAT_PROMPT.format(
-            research_results=research_json, code_results=code_json
-        )
+        prompt = CHAT_PROMPT.format(research_results=research_json, code_results=code_json)
 
     response = llm.invoke(
         [

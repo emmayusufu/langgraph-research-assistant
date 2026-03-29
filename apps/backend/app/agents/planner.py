@@ -1,5 +1,6 @@
 from langchain_core.messages import AIMessage, SystemMessage
 from langchain_openai import ChatOpenAI
+
 from app.config import settings
 
 llm = ChatOpenAI(
