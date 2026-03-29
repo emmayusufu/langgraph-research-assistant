@@ -1,3 +1,5 @@
+import os
+
 from pydantic_settings import BaseSettings
 
 
@@ -7,7 +9,7 @@ class Settings(BaseSettings):
     deepseek_model: str = "deepseek-chat"
     github_token: str = ""
 
-    model_config = {"env_file": ".env"}
+    model_config = {"env_file": os.environ.get("ENV_FILE", ".env")}
 
 
 settings = Settings()
