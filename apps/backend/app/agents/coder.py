@@ -6,9 +6,8 @@ from app.tools.github_search import search_github_code
 def coder_node(state: dict) -> dict:
     all_results = []
 
-    for task in state["sub_tasks"][:2]:
+    for task in state["sub_tasks"][:1]:
         github_results = search_github_code.invoke({"query": task, "max_results": 3})
-
         for gr in github_results:
             all_results.append({
                 "source_url": gr["url"],
@@ -17,11 +16,9 @@ def coder_node(state: dict) -> dict:
                 "description": f"{gr['repo']} — {gr['path']}",
             })
 
-    summary = f"Found {len(all_results)} code examples."
-
     return {
         "code_results": all_results,
-        "messages": [AIMessage(content=summary, name="coder")],
+        "messages": [AIMessage(content=f"Found {len(all_results)} code examples.", name="coder")],
     }
 
 
