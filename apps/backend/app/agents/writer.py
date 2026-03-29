@@ -65,4 +65,5 @@ def writer_node(state: dict) -> dict:
     return {
         "output": response.content,
         "messages": [AIMessage(content=response.content, name="writer")],
+        "completed_agents": ["writer"],
     }

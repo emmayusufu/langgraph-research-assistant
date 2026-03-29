@@ -36,4 +36,5 @@ def planner_node(state: dict) -> dict:
     return {
         "sub_tasks": sub_tasks,
         "messages": [AIMessage(content=response.content, name="planner")],
+        "completed_agents": ["planner"],
     }

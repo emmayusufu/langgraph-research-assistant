@@ -19,6 +19,7 @@ def coder_node(state: dict) -> dict:
     return {
         "code_results": all_results,
         "messages": [AIMessage(content=f"Found {len(all_results)} code examples.", name="coder")],
+        "completed_agents": ["coder"],
     }
 
 

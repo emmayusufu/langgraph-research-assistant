@@ -19,4 +19,5 @@ def researcher_node(state: dict) -> dict:
     return {
         "research_results": all_results,
         "messages": [AIMessage(content=f"Found {len(all_results)} results.", name="researcher")],
+        "completed_agents": ["researcher"],
     }

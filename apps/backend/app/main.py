@@ -47,6 +47,7 @@ async def research(request: ResearchRequest):
                 "output_mode": request.output_mode,
                 "messages": [HumanMessage(content=request.query)],
                 "next_agent": "",
+                "completed_agents": [],
             },
         )
         return {

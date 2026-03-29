@@ -1,3 +1,4 @@
+import operator
 from typing import Annotated, Literal
 
 from langchain_core.messages import AnyMessage
@@ -15,3 +16,4 @@ class ResearchState(TypedDict):
     output_mode: Literal["chat", "report"]
     messages: Annotated[list[AnyMessage], add_messages]
     next_agent: str
+    completed_agents: Annotated[list[str], operator.add]
