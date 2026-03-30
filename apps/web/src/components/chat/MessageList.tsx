@@ -3,6 +3,7 @@
 import { useRef, useEffect } from "react";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
+import TravelExploreIcon from "@mui/icons-material/TravelExplore";
 import type { ChatMessage } from "@/lib/types";
 import { MessageBubble } from "./MessageBubble";
 
@@ -19,8 +20,19 @@ export function MessageList({ messages }: MessageListProps) {
 
   if (messages.length === 0) {
     return (
-      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100%" }}>
-        <Typography color="text.secondary">
+      <Box
+        sx={{
+          flex: 1,
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+          alignItems: "center",
+          gap: 2,
+          opacity: 0.5,
+        }}
+      >
+        <TravelExploreIcon sx={{ fontSize: 56, color: "text.secondary" }} />
+        <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
           Ask a technical question to get started
         </Typography>
       </Box>
@@ -28,7 +40,7 @@ export function MessageList({ messages }: MessageListProps) {
   }
 
   return (
-    <Box sx={{ flex: 1, overflow: "auto", p: 2 }}>
+    <Box sx={{ flex: 1, overflow: "auto", py: 3, px: { xs: 2, md: 4 } }}>
       {messages.map((msg) => (
         <MessageBubble key={msg.id} message={msg} />
       ))}
