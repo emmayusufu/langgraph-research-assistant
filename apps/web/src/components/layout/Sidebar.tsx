@@ -8,12 +8,11 @@ import ListItemText from "@mui/material/ListItemText";
 import ListItemIcon from "@mui/material/ListItemIcon";
 import Divider from "@mui/material/Divider";
 import Box from "@mui/material/Box";
-import Switch from "@mui/material/Switch";
-import FormControlLabel from "@mui/material/FormControlLabel";
+import Chip from "@mui/material/Chip";
 import Typography from "@mui/material/Typography";
 import AddIcon from "@mui/icons-material/Add";
-import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
 import ChatOutlinedIcon from "@mui/icons-material/ChatOutlined";
+import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
 import type { OutputMode } from "@/lib/types";
 
 const DRAWER_WIDTH = 300;
@@ -45,68 +44,21 @@ export function Sidebar({ open, outputMode, onModeChange, onClose }: SidebarProp
         <Typography variant="subtitle2" color="text.secondary">
           Output Mode
         </Typography>
-        <Box
-          sx={{
-            display: "flex",
-            gap: 1,
-          }}
-        >
-          <Box
+        <Box sx={{ display: "flex", gap: 1 }}>
+          <Chip
+            icon={<ChatOutlinedIcon />}
+            label="Chat"
             onClick={() => onModeChange("chat")}
-            sx={{
-              flex: 1,
-              p: 1.5,
-              borderRadius: 2,
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              gap: 1,
-              border: 1,
-              borderColor: outputMode === "chat" ? "primary.main" : "divider",
-              bgcolor: outputMode === "chat" ? "primary.light" : "transparent",
-              transition: "all 0.2s",
-            }}
-          >
-            <ChatOutlinedIcon
-              fontSize="small"
-              sx={{ color: outputMode === "chat" ? "primary.main" : "text.secondary" }}
-            />
-            <Typography
-              variant="body2"
-              fontWeight={outputMode === "chat" ? 600 : 400}
-              color={outputMode === "chat" ? "primary.main" : "text.secondary"}
-            >
-              Chat
-            </Typography>
-          </Box>
-          <Box
+            color={outputMode === "chat" ? "primary" : "default"}
+            variant={outputMode === "chat" ? "filled" : "outlined"}
+          />
+          <Chip
+            icon={<DescriptionOutlinedIcon />}
+            label="Report"
             onClick={() => onModeChange("report")}
-            sx={{
-              flex: 1,
-              p: 1.5,
-              borderRadius: 2,
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              gap: 1,
-              border: 1,
-              borderColor: outputMode === "report" ? "primary.main" : "divider",
-              bgcolor: outputMode === "report" ? "primary.light" : "transparent",
-              transition: "all 0.2s",
-            }}
-          >
-            <DescriptionOutlinedIcon
-              fontSize="small"
-              sx={{ color: outputMode === "report" ? "primary.main" : "text.secondary" }}
-            />
-            <Typography
-              variant="body2"
-              fontWeight={outputMode === "report" ? 600 : 400}
-              color={outputMode === "report" ? "primary.main" : "text.secondary"}
-            >
-              Report
-            </Typography>
-          </Box>
+            color={outputMode === "report" ? "primary" : "default"}
+            variant={outputMode === "report" ? "filled" : "outlined"}
+          />
         </Box>
       </Box>
       <Divider />

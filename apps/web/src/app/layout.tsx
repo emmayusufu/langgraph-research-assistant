@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
-import { Noto_Sans } from "next/font/google";
+import { Nunito } from "next/font/google";
 import { Providers } from "./providers";
 
-const notoSans = Noto_Sans({
+const nunito = Nunito({
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
+  weight: ["300", "400", "500", "600", "700", "800"],
   display: "swap",
-  variable: "--font-noto-sans",
+  variable: "--font-nunito",
 });
 
 export const metadata: Metadata = {
@@ -21,7 +21,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={notoSans.variable}>
+      <body className={nunito.variable}>
         <Providers>{children}</Providers>
       </body>
     </html>

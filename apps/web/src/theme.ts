@@ -4,7 +4,7 @@ import { createTheme } from "@mui/material/styles";
 
 const shared = {
   typography: {
-    fontFamily: "var(--font-noto-sans), 'Noto Sans', sans-serif",
+    fontFamily: "var(--font-nunito), 'Nunito', sans-serif",
     h6: { fontWeight: 600, letterSpacing: "-0.01em" },
     subtitle1: { fontWeight: 600 },
     subtitle2: {
