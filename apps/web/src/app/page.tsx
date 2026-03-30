@@ -4,9 +4,9 @@ import { useState } from "react";
 import Box from "@mui/material/Box";
 import Toolbar from "@mui/material/Toolbar";
 import Button from "@mui/material/Button";
-import CircularProgress from "@mui/material/CircularProgress";
 import Typography from "@mui/material/Typography";
 import Chip from "@mui/material/Chip";
+import LinearProgress from "@mui/material/LinearProgress";
 import { Header } from "@/components/layout/Header";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { MessageList } from "@/components/chat/MessageList";
@@ -16,10 +16,10 @@ import { useChat } from "@/hooks/useChat";
 
 const AGENT_LABELS: Record<string, string> = {
   supervisor: "Routing...",
-  planner: "Planning research...",
+  planner: "Breaking down your question...",
   researcher: "Searching the web...",
   coder: "Finding code examples...",
-  writer: "Writing answer...",
+  writer: "Writing your answer...",
 };
 
 export default function HomePage() {
@@ -43,7 +43,7 @@ export default function HomePage() {
   };
 
   return (
-    <Box sx={{ display: "flex", height: "100vh" }}>
+    <Box sx={{ display: "flex", height: "100vh", bgcolor: "background.default" }}>
       <Header onMenuClick={() => setSidebarOpen(true)} />
       <Sidebar
         open={sidebarOpen}
@@ -54,37 +54,42 @@ export default function HomePage() {
       <Box sx={{ flex: 1, display: "flex", flexDirection: "column" }}>
         <Toolbar />
         {isLoading && (
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              gap: 1.5,
-              px: 2,
-              py: 1,
-              bgcolor: "background.paper",
-              borderBottom: 1,
-              borderColor: "divider",
-            }}
-          >
-            <CircularProgress size={18} />
-            {activeAgent && (
-              <>
-                <Chip
-                  label={activeAgent}
-                  size="small"
-                  color="primary"
-                  variant="outlined"
-                />
-                <Typography variant="body2" color="text.secondary">
-                  {AGENT_LABELS[activeAgent] || "Working..."}
+          <Box>
+            <LinearProgress
+              sx={{
+                height: 2,
+                "& .MuiLinearProgress-bar": { transition: "none" },
+              }}
+            />
+            <Box
+              className="fade-in-up"
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: 1.5,
+                px: { xs: 2, md: 4 },
+                py: 1.5,
+              }}
+            >
+              {activeAgent && (
+                <>
+                  <Chip
+                    label={activeAgent}
+                    size="small"
+                    color="primary"
+                    sx={{ fontSize: "0.75rem" }}
+                  />
+                  <Typography variant="body2" color="text.secondary" className="pulse">
+                    {AGENT_LABELS[activeAgent] || "Working..."}
+                  </Typography>
+                </>
+              )}
+              {!activeAgent && (
+                <Typography variant="body2" color="text.secondary" className="pulse">
+                  Starting research...
                 </Typography>
-              </>
-            )}
-            {!activeAgent && (
-              <Typography variant="body2" color="text.secondary">
-                Starting...
-              </Typography>
-            )}
+              )}
+            </Box>
           </Box>
         )}
         {showReport && lastOutput ? (
@@ -102,6 +107,7 @@ export default function HomePage() {
                   size="small"
                   variant="outlined"
                   onClick={() => setShowReport(true)}
+                  sx={{ borderRadius: 2, fontSize: "0.8rem" }}
                 >
                   View as Report
                 </Button>

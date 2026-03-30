@@ -1,16 +1,23 @@
 "use client";
 
 import IconButton from "@mui/material/IconButton";
-import DarkModeIcon from "@mui/icons-material/DarkMode";
-import LightModeIcon from "@mui/icons-material/LightMode";
+import DarkModeOutlinedIcon from "@mui/icons-material/DarkModeOutlined";
+import LightModeOutlinedIcon from "@mui/icons-material/LightModeOutlined";
 import { useThemeContext } from "@/app/providers";
 
 export function ThemeToggle() {
   const { isDark, toggleTheme } = useThemeContext();
 
   return (
-    <IconButton color="inherit" onClick={toggleTheme}>
-      {isDark ? <LightModeIcon /> : <DarkModeIcon />}
+    <IconButton
+      onClick={toggleTheme}
+      sx={{
+        color: "text.secondary",
+        transition: "color 0.2s, transform 0.2s",
+        "&:hover": { color: "primary.main", transform: "rotate(30deg)" },
+      }}
+    >
+      {isDark ? <LightModeOutlinedIcon /> : <DarkModeOutlinedIcon />}
     </IconButton>
   );
 }
