@@ -11,5 +11,3 @@ export interface ChatMessage {
   content: string;
   timestamp: Date;
 }
-
-export type OutputMode = "chat" | "report";

@@ -28,23 +28,52 @@ export function MessageList({ messages }: MessageListProps) {
           justifyContent: "center",
           alignItems: "center",
           gap: 2,
-          opacity: 0.5,
+          px: 3,
         }}
       >
-        <TravelExploreIcon sx={{ fontSize: 56, color: "text.secondary" }} />
-        <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
-          Ask a technical question to get started
-        </Typography>
+        <Box
+          sx={{
+            width: 64,
+            height: 64,
+            borderRadius: 3,
+            bgcolor: (theme) =>
+              theme.palette.mode === "dark"
+                ? "rgba(45, 212, 191, 0.08)"
+                : "rgba(13, 148, 136, 0.06)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <TravelExploreIcon sx={{ fontSize: 32, color: "primary.main", opacity: 0.7 }} />
+        </Box>
+        <Box sx={{ textAlign: "center" }}>
+          <Typography variant="body1" fontWeight={600} sx={{ mb: 0.5 }}>
+            What would you like to research?
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Ask any technical question and I'll search the web for you.
+          </Typography>
+        </Box>
       </Box>
     );
   }
 
   return (
-    <Box sx={{ flex: 1, overflow: "auto", py: 3, px: { xs: 2, md: 4 } }}>
-      {messages.map((msg) => (
-        <MessageBubble key={msg.id} message={msg} />
-      ))}
-      <div ref={bottomRef} />
+    <Box
+      sx={{
+        flex: 1,
+        overflow: "auto",
+        py: 3,
+        px: { xs: 2, md: 0 },
+      }}
+    >
+      <Box sx={{ maxWidth: 720, mx: "auto" }}>
+        {messages.map((msg) => (
+          <MessageBubble key={msg.id} message={msg} />
+        ))}
+        <div ref={bottomRef} />
+      </Box>
     </Box>
   );
 }

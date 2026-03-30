@@ -2,7 +2,7 @@
 
 import IconButton from "@mui/material/IconButton";
 import DarkModeOutlinedIcon from "@mui/icons-material/DarkModeOutlined";
-import LightModeOutlinedIcon from "@mui/icons-material/LightModeOutlined";
+import WbSunnyOutlinedIcon from "@mui/icons-material/WbSunnyOutlined";
 import { useThemeContext } from "@/app/providers";
 
 export function ThemeToggle() {
@@ -11,13 +11,19 @@ export function ThemeToggle() {
   return (
     <IconButton
       onClick={toggleTheme}
+      size="small"
       sx={{
+        width: 28,
+        height: 28,
         color: "text.secondary",
-        transition: "color 0.2s, transform 0.2s",
-        "&:hover": { color: "primary.main", transform: "rotate(30deg)" },
+        "&:hover": { color: "primary.main" },
       }}
     >
-      {isDark ? <LightModeOutlinedIcon /> : <DarkModeOutlinedIcon />}
+      {isDark ? (
+        <WbSunnyOutlinedIcon sx={{ fontSize: 15 }} />
+      ) : (
+        <DarkModeOutlinedIcon sx={{ fontSize: 15 }} />
+      )}
     </IconButton>
   );
 }
