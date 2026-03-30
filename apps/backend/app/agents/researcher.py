@@ -9,12 +9,14 @@ def researcher_node(state: dict) -> dict:
     for task in state["sub_tasks"][:3]:
         search_results = search_web.invoke({"query": task, "max_results": 3})
         for sr in search_results:
-            all_results.append({
-                "source_url": sr["url"],
-                "title": sr.get("title", ""),
-                "content_summary": sr.get("snippet", ""),
-                "relevance_score": 1.0,
-            })
+            all_results.append(
+                {
+                    "source_url": sr["url"],
+                    "title": sr.get("title", ""),
+                    "content_summary": sr.get("snippet", ""),
+                    "relevance_score": 1.0,
+                }
+            )
 
     return {
         "research_results": all_results,

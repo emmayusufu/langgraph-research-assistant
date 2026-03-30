@@ -2,7 +2,7 @@ import asyncio
 import json
 from typing import Literal
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse
 from langchain_core.messages import HumanMessage
@@ -95,7 +95,7 @@ async def research_stream(request: ResearchRequest):
         for event in events:
             yield f"data: {json.dumps(event)}\n\n"
 
-        yield "data: {\"type\": \"done\"}\n\n"
+        yield 'data: {"type": "done"}\n\n'
 
     return StreamingResponse(
         event_generator(),

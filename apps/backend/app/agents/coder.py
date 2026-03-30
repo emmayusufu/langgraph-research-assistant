@@ -9,12 +9,14 @@ def coder_node(state: dict) -> dict:
     for task in state["sub_tasks"][:1]:
         github_results = search_github_code.invoke({"query": task, "max_results": 3})
         for gr in github_results:
-            all_results.append({
-                "source_url": gr["url"],
-                "language": _guess_language(gr.get("name", "")),
-                "code_snippet": "",
-                "description": f"{gr['repo']} — {gr['path']}",
-            })
+            all_results.append(
+                {
+                    "source_url": gr["url"],
+                    "language": _guess_language(gr.get("name", "")),
+                    "code_snippet": "",
+                    "description": f"{gr['repo']} — {gr['path']}",
+                }
+            )
 
     return {
         "code_results": all_results,
@@ -25,9 +27,15 @@ def coder_node(state: dict) -> dict:
 
 def _guess_language(filename: str) -> str:
     ext_map = {
-        ".py": "python", ".js": "javascript", ".ts": "typescript",
-        ".tsx": "typescript", ".jsx": "javascript", ".go": "go",
-        ".rs": "rust", ".java": "java", ".rb": "ruby",
+        ".py": "python",
+        ".js": "javascript",
+        ".ts": "typescript",
+        ".tsx": "typescript",
+        ".jsx": "javascript",
+        ".go": "go",
+        ".rs": "rust",
+        ".java": "java",
+        ".rb": "ruby",
     }
     for ext, lang in ext_map.items():
         if filename.endswith(ext):

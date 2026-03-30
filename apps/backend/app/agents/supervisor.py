@@ -1,12 +1,28 @@
 from typing import Literal
 
 from langgraph.graph import END
-from langgraph.types import Command, Send
+from langgraph.types import Command
 
 CODE_KEYWORDS = {
-    "code", "example", "implement", "function", "class", "library",
-    "package", "module", "api", "sdk", "syntax", "snippet", "build",
-    "create", "write", "program", "script", "tutorial", "how to",
+    "code",
+    "example",
+    "implement",
+    "function",
+    "class",
+    "library",
+    "package",
+    "module",
+    "api",
+    "sdk",
+    "syntax",
+    "snippet",
+    "build",
+    "create",
+    "write",
+    "program",
+    "script",
+    "tutorial",
+    "how to",
 }
 
 MIN_RESEARCH_RESULTS = 3
