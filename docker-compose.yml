@@ -53,6 +53,20 @@ services:
       start_period: 30s
     restart: unless-stopped
 
+  opa:
+    image: openpolicyagent/opa:latest
+    command: run --server --addr :8181 /policies
+    volumes:
+      - ./policies:/policies
+    ports:
+      - "8181:8181"
+    healthcheck:
+      test: ["CMD", "/opa", "health", "--addr", "http://localhost:8181"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
   backend:
     build:
       context: ./apps/backend
@@ -65,6 +79,9 @@ services:
       - ./apps/backend/app:/app/app
       - ./apps/backend/tests:/app/tests
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    depends_on:
+      opa:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
