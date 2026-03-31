@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createPrivateKey, createSign } from "crypto";
+import { Pool } from "pg";
 
 const ZITADEL_ISSUER = process.env.ZITADEL_ISSUER!;
+const db = new Pool({ connectionString: process.env.DATABASE_URL });
 
 async function getMachineToken(): Promise<string> {
   const keyData = JSON.parse(process.env.ZITADEL_MACHINE_KEY!);
@@ -68,6 +70,14 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
+
+    const { humanUserId } = await res.json();
+    await db.query(
+      `INSERT INTO user_profiles (zitadel_user_id, display_name)
+       VALUES ($1, $2)
+       ON CONFLICT (zitadel_user_id) DO NOTHING`,
+      [humanUserId, `${firstName} ${lastName}`.trim()]
+    );
 
     return NextResponse.json({ ok: true });
   } catch (err) {

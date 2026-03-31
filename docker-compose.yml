@@ -157,6 +157,7 @@ services:
       - ZITADEL_CLIENT_SECRET=${ZITADEL_CLIENT_SECRET}
       - ZITADEL_MACHINE_KEY=${ZITADEL_MACHINE_KEY}
       - OPA_URL=http://opa:8181
+      - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/app
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:3000/ || exit 1"]
       interval: 15s
@@ -165,6 +166,7 @@ services:
       start_period: 60s
     depends_on:
       - zitadel
+      - postgres
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.web.rule=PathPrefix(`/`)"
