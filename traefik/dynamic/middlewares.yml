@@ -1,0 +1,16 @@
+http:
+  middlewares:
+    jwt-auth:
+      plugin:
+        jwt:
+          jwksUrl: "http://zitadel:8080/oauth/v2/keys"
+          opaUrl: "http://opa:8181/v1/data/jwt/allow"
+          forwardHeaders:
+            X-User-Id: "sub"
+            X-User-Org: "urn:zitadel:iam:org:id"
+            X-User-Email: "email"
+          payloadFields:
+            - "sub"
+            - "email"
+            - "jti"
+            - "urn:zitadel:iam:org:id"
