@@ -1,0 +1,217 @@
+import { createPrivateKey, createSign } from "crypto";
+import { readFileSync } from "fs";
+import { request as httpRequest } from "http";
+import { URL } from "url";
+
+const ZITADEL_URL = process.env.ZITADEL_URL ?? "http://zitadel:8080";
+const MACHINE_KEY_PATH = process.env.MACHINE_KEY_PATH ?? "/machinekey/zitadel-admin-sa.json";
+const ZITADEL_DOMAIN = process.env.ZITADEL_DOMAIN ?? "localhost";
+const ZITADEL_PORT = process.env.ZITADEL_PORT ?? "8080";
+const ZITADEL_HOST_HEADER = ZITADEL_PORT === "80" ? ZITADEL_DOMAIN : `${ZITADEL_DOMAIN}:${ZITADEL_PORT}`;
+const ZITADEL_ISSUER = `http://${ZITADEL_HOST_HEADER}`;
+const NEXTAUTH_REDIRECT_URI =
+  process.env.NEXTAUTH_REDIRECT_URI ?? "http://localhost:3000/api/auth/callback/zitadel";
+
+function httpFetch(urlStr, { method = "GET", headers = {}, body } = {}) {
+  return new Promise((resolve, reject) => {
+    const parsed = new URL(urlStr);
+    const opts = {
+      hostname: parsed.hostname,
+      port: parsed.port || 80,
+      path: parsed.pathname + parsed.search,
+      method,
+      headers: { Host: ZITADEL_HOST_HEADER, ...headers },
+    };
+    const req = httpRequest(opts, (res) => {
+      const chunks = [];
+      res.on("data", (c) => chunks.push(c));
+      res.on("end", () => {
+        const text = Buffer.concat(chunks).toString();
+        resolve({
+          ok: res.statusCode >= 200 && res.statusCode < 300,
+          status: res.statusCode,
+          text: () => Promise.resolve(text),
+          json: () => Promise.resolve(JSON.parse(text)),
+        });
+      });
+    });
+    req.on("error", reject);
+    if (body) req.write(body);
+    req.end();
+  });
+}
+
+async function waitForZitadel() {
+  for (let i = 0; i < 30; i++) {
+    try {
+      const res = await httpFetch(`${ZITADEL_URL}/debug/healthz`);
+      if (res.ok) return;
+    } catch (err) {
+      if (i % 5 === 0) console.log(`Waiting for Zitadel... (attempt ${i + 1}/30)`);
+    }
+    await new Promise((r) => setTimeout(r, 2000));
+  }
+  throw new Error("Zitadel did not become healthy in time");
+}
+
+function buildJwt(keyData) {
+  const now = Math.floor(Date.now() / 1000);
+  const header = Buffer.from(
+    JSON.stringify({ alg: "RS256", kid: keyData.keyId })
+  ).toString("base64url");
+  const payload = Buffer.from(
+    JSON.stringify({
+      iss: keyData.userId,
+      sub: keyData.userId,
+      aud: ZITADEL_ISSUER,
+      iat: now,
+      exp: now + 3600,
+    })
+  ).toString("base64url");
+  const sign = createSign("RSA-SHA256");
+  sign.update(`${header}.${payload}`);
+  const sig = sign.sign(createPrivateKey(keyData.key), "base64url");
+  return `${header}.${payload}.${sig}`;
+}
+
+async function getAccessToken(keyData) {
+  const jwt = buildJwt(keyData);
+  const body = new URLSearchParams({
+    grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
+    scope: `openid urn:zitadel:iam:org:domain:primary:${ZITADEL_DOMAIN} urn:zitadel:iam:permission:admin urn:zitadel:iam:org:project:id:zitadel:aud`,
+    assertion: jwt,
+  }).toString();
+  const res = await httpFetch(`${ZITADEL_URL}/oauth/v2/token`, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded", "Content-Length": Buffer.byteLength(body) },
+    body,
+  });
+  const data = await res.json();
+  if (!data.access_token) throw new Error(`Token exchange failed: ${JSON.stringify(data)}`);
+  return data.access_token;
+}
+
+async function makeRequest(token, method, path, body) {
+  const bodyStr = body ? JSON.stringify(body) : undefined;
+  return httpFetch(`${ZITADEL_URL}${path}`, {
+    method,
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+      ...(bodyStr ? { "Content-Length": Buffer.byteLength(bodyStr) } : {}),
+    },
+    body: bodyStr,
+  });
+}
+
+async function api(token, method, path, body) {
+  const res = await makeRequest(token, method, path, body);
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`${method} ${path} → ${res.status}: ${text}`);
+  }
+  return res.json();
+}
+
+async function apiMaybeConflict(token, method, path, body) {
+  const res = await makeRequest(token, method, path, body);
+  if (res.status === 409) return null;
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`${method} ${path} → ${res.status}: ${text}`);
+  }
+  return res.json();
+}
+
+async function main() {
+  await waitForZitadel();
+  const keyData = JSON.parse(readFileSync(MACHINE_KEY_PATH, "utf8"));
+  const token = await getAccessToken(keyData);
+
+  const githubId = process.env.GITHUB_CLIENT_ID;
+  const githubSecret = process.env.GITHUB_CLIENT_SECRET;
+  if (githubId && githubSecret) {
+    const created = await apiMaybeConflict(token, "POST", "/admin/v1/idps/github", {
+      name: "GitHub",
+      clientId: githubId,
+      clientSecret: githubSecret,
+      scopes: ["user:email", "read:user"],
+    });
+    console.log(created ? "GitHub IdP configured" : "GitHub IdP already exists");
+  }
+
+  const googleId = process.env.GOOGLE_CLIENT_ID;
+  const googleSecret = process.env.GOOGLE_CLIENT_SECRET;
+  if (googleId && googleSecret) {
+    const created = await apiMaybeConflict(token, "POST", "/admin/v1/idps/google", {
+      name: "Google",
+      clientId: googleId,
+      clientSecret: googleSecret,
+      scopes: ["openid", "email", "profile"],
+    });
+    console.log(created ? "Google IdP configured" : "Google IdP already exists");
+  }
+
+  let project = await apiMaybeConflict(token, "POST", "/management/v1/projects", {
+    name: "Writing Platform",
+    projectRoleAssertion: true,
+  });
+  if (!project) {
+    const search = await api(token, "POST", "/management/v1/projects/_search", { queries: [{ nameQuery: { name: "Writing Platform", method: "TEXT_QUERY_METHOD_EQUALS" } }] });
+    project = search.result?.[0] ?? (() => { throw new Error("Project not found after conflict"); })();
+  }
+
+  const oidcApp = await apiMaybeConflict(
+    token,
+    "POST",
+    `/management/v1/projects/${project.id}/apps/oidc`,
+    {
+      name: "Web",
+      redirectUris: [NEXTAUTH_REDIRECT_URI],
+      responseTypes: ["OIDC_RESPONSE_TYPE_CODE"],
+      grantTypes: [
+        "OIDC_GRANT_TYPE_AUTHORIZATION_CODE",
+        "OIDC_GRANT_TYPE_REFRESH_TOKEN",
+      ],
+      appType: "OIDC_APP_TYPE_WEB",
+      authMethodType: "OIDC_AUTH_METHOD_TYPE_BASIC",
+      postLogoutRedirectUris: ["http://localhost:3000"],
+      accessTokenType: "OIDC_TOKEN_TYPE_JWT",
+    }
+  );
+
+  try {
+    await api(token, "PUT", "/admin/v1/settings/oidc", {
+      accessTokenLifetime: "900s",
+      idTokenLifetime: "3600s",
+      refreshTokenIdleExpiration: "2592000s",
+      refreshTokenExpiration: "2592000s",
+    });
+  } catch (err) {
+    // 400 means settings already configured — not an error
+    if (!err.message.includes("400")) throw err;
+  }
+
+  if (!oidcApp) {
+    const apps = await api(token, "GET", `/management/v1/projects/${project.id}/apps/_search`);
+    const existing = apps.result?.find((a) => a.name === "Web");
+    if (existing) {
+      console.log("\n=== OIDC App (existing) ===");
+      console.log(`App ID: ${existing.id}`);
+      console.log("Client secret is not retrievable — check Zitadel console or regenerate.");
+    }
+  } else {
+    console.log("\n=== OIDC App Created ===");
+    console.log(`Client ID:     ${oidcApp.clientId}`);
+    console.log(`Client Secret: ${oidcApp.clientSecret}`);
+    console.log("\nAdd to .env:");
+    console.log(`ZITADEL_CLIENT_ID=${oidcApp.clientId}`);
+    console.log(`ZITADEL_CLIENT_SECRET=${oidcApp.clientSecret}`);
+    console.log("\nToken lifetimes configured (access: 15m, refresh: 30d)");
+  }
+}
+
+main().catch((err) => {
+  console.error(err.message);
+  process.exit(1);
+});

@@ -1,16 +1,30 @@
 import asyncio
 import json
+from contextlib import asynccontextmanager
 from typing import Literal
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse
 from langchain_core.messages import HumanMessage
 from pydantic import BaseModel
 
+from app.db import close_pool, init_pool
 from app.graph import build_graph
+from app.middleware.auth import attach_user, current_user
+from app.models.user import User
 
-app = FastAPI(title="Research Assistant")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> None:
+    await init_pool()
+    yield
+    await close_pool()
+
+
+app = FastAPI(title="Research Assistant", lifespan=lifespan)
+
+app.middleware("http")(attach_user)
 
 app.add_middleware(
     CORSMiddleware,
@@ -51,7 +65,7 @@ async def health():
 
 
 @app.post("/api/research")
-async def research(request: ResearchRequest):
+async def research(request: ResearchRequest, user: User = Depends(current_user)):
     try:
         result = await asyncio.to_thread(
             graph.invoke,
@@ -73,7 +87,7 @@ def _serialize_message(msg):
 
 
 @app.post("/api/research/stream")
-async def research_stream(request: ResearchRequest):
+async def research_stream(request: ResearchRequest, user: User = Depends(current_user)):
     async def event_generator():
         state = _initial_state(request.query, request.output_mode)
 
