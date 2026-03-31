@@ -20,6 +20,7 @@ services:
   zitadel:
     image: ghcr.io/zitadel/zitadel:latest
     command: start-from-init --masterkey "${ZITADEL_MASTERKEY}" --tlsMode disabled
+    user: "0"
     environment:
       ZITADEL_DATABASE_POSTGRES_HOST: postgres
       ZITADEL_DATABASE_POSTGRES_PORT: 5432
@@ -38,6 +39,9 @@ services:
       ZITADEL_FIRSTINSTANCE_MACHINEKEYPATH: /machinekey/zitadel-admin-sa.json
       ZITADEL_FIRSTINSTANCE_ORG_HUMAN_USERNAME: admin
       ZITADEL_FIRSTINSTANCE_ORG_HUMAN_PASSWORD: ${ZITADEL_ADMIN_PASSWORD}
+      ZITADEL_FIRSTINSTANCE_ORG_MACHINE_MACHINE_USERNAME: zitadel-admin-sa
+      ZITADEL_FIRSTINSTANCE_ORG_MACHINE_MACHINE_NAME: Admin Service Account
+      ZITADEL_FIRSTINSTANCE_ORG_MACHINE_MACHINEKEY_TYPE: 1
     volumes:
       - zitadel_machinekey:/machinekey
     ports:
@@ -167,6 +171,29 @@ services:
       - "traefik.http.routers.web.priority=1"
       - "traefik.http.services.web.loadbalancer.server.port=3000"
     restart: unless-stopped
+
+  zitadel-init:
+    image: node:20-alpine
+    working_dir: /app
+    volumes:
+      - ./apps/zitadel-init:/app
+      - zitadel_machinekey:/machinekey
+    command: node init.mjs
+    environment:
+      ZITADEL_URL: http://zitadel:8080
+      ZITADEL_DOMAIN: ${ZITADEL_DOMAIN:-localhost}
+      ZITADEL_PORT: 8080
+      MACHINE_KEY_PATH: /machinekey/zitadel-admin-sa.json
+      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID}
+      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      NEXTAUTH_REDIRECT_URI: ${NEXTAUTH_URL:-http://localhost:3000}/api/auth/callback/zitadel
+    depends_on:
+      zitadel:
+        condition: service_healthy
+    profiles:
+      - init
 
 networks:
   traefik-proxy:
