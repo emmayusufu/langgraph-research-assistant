@@ -10,7 +10,7 @@ const ZITADEL_PORT = process.env.ZITADEL_PORT ?? "8080";
 const ZITADEL_HOST_HEADER = ZITADEL_PORT === "80" ? ZITADEL_DOMAIN : `${ZITADEL_DOMAIN}:${ZITADEL_PORT}`;
 const ZITADEL_ISSUER = `http://${ZITADEL_HOST_HEADER}`;
 const NEXTAUTH_REDIRECT_URI =
-  process.env.NEXTAUTH_REDIRECT_URI ?? "http://localhost:3000/api/auth/callback/zitadel";
+  process.env.NEXTAUTH_REDIRECT_URI ?? "http://localhost:3847/api/auth/callback/zitadel";
 const LOGIN_BASE_URI = new URL(NEXTAUTH_REDIRECT_URI).origin + "/auth";
 
 interface FetchResponse {
