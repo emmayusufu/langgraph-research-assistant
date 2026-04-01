@@ -1,6 +1,6 @@
 services:
   postgres:
-    image: postgres:17-alpine
+    image: postgres:18.3-alpine
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -155,6 +155,7 @@ services:
       - ZITADEL_CLIENT_ID=${ZITADEL_CLIENT_ID}
       - ZITADEL_CLIENT_SECRET=${ZITADEL_CLIENT_SECRET}
       - ZITADEL_MACHINE_KEY=${ZITADEL_MACHINE_KEY}
+      - ZITADEL_LOGIN_CLIENT_TOKEN=${ZITADEL_LOGIN_CLIENT_TOKEN}
       - ZITADEL_INTERNAL_URL=http://zitadel:8080
       - OPA_URL=http://opa:8181
       - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/app
