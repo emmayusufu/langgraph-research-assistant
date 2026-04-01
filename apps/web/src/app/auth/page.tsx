@@ -27,23 +27,29 @@ function LoginNameForm() {
     e.preventDefault();
     setLoading(true);
     setError("");
-
-    const res = await fetch("/api/zitadel-session", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "start-session", loginName }),
-    });
-    const data = await res.json() as { sessionId?: string; error?: string };
-
-    if (!res.ok) {
-      setError(data.error ?? "Something went wrong");
+    try {
+      const res = await fetch("/api/zitadel-session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "start-session", loginName }),
+      });
+      const data = await res.json() as { sessionId?: string; error?: string };
+      if (!res.ok) {
+        setError(data.error ?? "Something went wrong");
+        return;
+      }
+      if (!data.sessionId) {
+        setError("Unexpected error — no session returned");
+        return;
+      }
+      router.push(
+        `/auth/password?authRequest=${encodeURIComponent(authRequestId)}&sessionId=${encodeURIComponent(data.sessionId)}`
+      );
+    } catch {
+      setError("Network error — please try again");
+    } finally {
       setLoading(false);
-      return;
     }
-
-    router.push(
-      `/auth/password?authRequest=${encodeURIComponent(authRequestId)}&sessionId=${encodeURIComponent(data.sessionId!)}`
-    );
   };
 
   return (
@@ -127,7 +133,7 @@ function LoginNameForm() {
 
 export default function AuthLoginPage() {
   return (
-    <Suspense>
+    <Suspense fallback={<CircularProgress sx={{ display: "block", mx: "auto", mt: 8 }} />}>
       <LoginNameForm />
     </Suspense>
   );

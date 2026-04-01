@@ -27,22 +27,27 @@ function PasswordForm() {
     e.preventDefault();
     setLoading(true);
     setError("");
-
-    const res = await fetch("/api/zitadel-session", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "authenticate", sessionId, authRequestId, password }),
-    });
-    const data = await res.json() as { callbackUri?: string; error?: string };
-
-    if (!res.ok) {
-      setError(data.error ?? "Authentication failed");
+    try {
+      const res = await fetch("/api/zitadel-session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "authenticate", sessionId, authRequestId, password }),
+      });
+      const data = await res.json() as { callbackUri?: string; error?: string };
+      if (!res.ok) {
+        setError(data.error ?? "Authentication failed");
+        return;
+      }
+      if (!data.callbackUri) {
+        setError("Unexpected error — no callback URI returned");
+        return;
+      }
+      window.location.href = data.callbackUri;
+    } catch {
+      setError("Network error — please try again");
+    } finally {
       setLoading(false);
-      return;
     }
-
-    // Redirect to Zitadel's OIDC callback → Zitadel redirects to next-auth callback
-    window.location.href = data.callbackUri!;
   };
 
   return (
@@ -124,7 +129,7 @@ function PasswordForm() {
 
 export default function PasswordPage() {
   return (
-    <Suspense>
+    <Suspense fallback={<CircularProgress sx={{ display: "block", mx: "auto", mt: 8 }} />}>
       <PasswordForm />
     </Suspense>
   );
