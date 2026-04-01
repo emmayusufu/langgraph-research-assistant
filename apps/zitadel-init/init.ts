@@ -190,7 +190,7 @@ async function setupLoginClient(token: string): Promise<void> {
     roles: ["IAM_LOGIN_CLIENT"],
   });
 
-  const patRes = await makeRequest(token, "POST", `/v2/users/${userId}/pats`, {});
+  const patRes = await makeRequest(token, "POST", `/v2/users/${userId}/pats`);
   const patData = await patRes.json() as { token?: string };
   if (patRes.ok && patData.token) {
     console.log("\n=== Login Client ===");
