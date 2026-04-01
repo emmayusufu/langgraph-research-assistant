@@ -1,5 +1,6 @@
 import asyncio
 import json
+from contextlib import asynccontextmanager
 from typing import Literal
 
 from fastapi import FastAPI
@@ -8,9 +9,18 @@ from fastapi.responses import JSONResponse, StreamingResponse
 from langchain_core.messages import HumanMessage
 from pydantic import BaseModel
 
+from app.db import close_pool, init_pool
 from app.graph import build_graph
 
-app = FastAPI(title="Research Assistant")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> None:
+    await init_pool()
+    yield
+    await close_pool()
+
+
+app = FastAPI(title="Research Assistant", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
