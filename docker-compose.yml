@@ -140,8 +140,8 @@ services:
   web:
     image: node:24-alpine
     working_dir: /app
-    expose:
-      - "3847"
+    ports:
+      - "3847:3847"
     volumes:
       - ./apps/web:/app
       - /app/node_modules
