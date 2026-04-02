@@ -32,7 +32,6 @@ const FEATURES = [
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
     <Box sx={{ minHeight: "100vh", display: "flex", bgcolor: "background.default" }}>
-      {/* Left branding panel */}
       <Box
         sx={{
           display: { xs: "none", md: "flex" },
@@ -43,8 +42,8 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           py: 6,
           background: (t) =>
             t.palette.mode === "dark"
-              ? "linear-gradient(145deg, #0b1120 0%, #0d2137 60%, #042f2e 100%)"
-              : "linear-gradient(145deg, #f0fdfa 0%, #ccfbf1 60%, #e0f2fe 100%)",
+              ? "linear-gradient(145deg, #0b1120 0%, #0d1e3d 60%, #0f172a 100%)"
+              : "linear-gradient(145deg, #eff6ff 0%, #dbeafe 60%, #e0f2fe 100%)",
           position: "relative",
           overflow: "hidden",
         }}
@@ -79,7 +78,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              boxShadow: "0 4px 16px rgba(13,148,136,0.35)",
+              boxShadow: "0 4px 16px rgba(30,58,138,0.35)",
             }}
           >
             <TravelExploreIcon sx={{ color: "white", fontSize: 22 }} />
@@ -116,8 +115,8 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
                     borderRadius: "10px",
                     bgcolor: (t) =>
                       t.palette.mode === "dark"
-                        ? "rgba(45,212,191,0.12)"
-                        : "rgba(13,148,136,0.1)",
+                        ? "rgba(96,165,250,0.12)"
+                        : "rgba(30,58,138,0.1)",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
@@ -135,7 +134,6 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         </Box>
       </Box>
 
-      {/* Right panel — page content */}
       <Box
         sx={{
           flex: 1,
@@ -147,7 +145,6 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           py: 6,
         }}
       >
-        {/* Mobile logo */}
         <Box
           sx={{ display: { xs: "flex", md: "none" }, alignItems: "center", gap: 1.5, mb: 6 }}
         >

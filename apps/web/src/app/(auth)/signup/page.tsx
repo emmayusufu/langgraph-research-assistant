@@ -63,7 +63,6 @@ export default function SignupPage() {
 
   return (
     <Box sx={{ minHeight: "100vh", display: "flex", bgcolor: "background.default" }}>
-      {/* Left panel — form */}
       <Box
         sx={{
           flex: 1,
@@ -75,7 +74,6 @@ export default function SignupPage() {
           py: 6,
         }}
       >
-        {/* Logo */}
         <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 6, alignSelf: { xs: "center", md: "flex-start" } }}>
           <Box
             sx={{
@@ -137,6 +135,7 @@ export default function SignupPage() {
                   onChange={set("firstName")}
                   required
                   fullWidth
+                  placeholder="Alice"
                   sx={inputSx}
                   slotProps={{
                     input: {
@@ -156,6 +155,7 @@ export default function SignupPage() {
                   onChange={set("lastName")}
                   required
                   fullWidth
+                  placeholder="Smith"
                   sx={inputSx}
                 />
               </Grid>
@@ -213,9 +213,9 @@ export default function SignupPage() {
                 fontSize: "0.95rem",
                 fontWeight: 700,
                 borderRadius: "14px",
-                boxShadow: "0 4px 20px rgba(13,148,136,0.3)",
+                boxShadow: "0 4px 20px rgba(30,58,138,0.3)",
                 "&:hover:not(:disabled)": {
-                  boxShadow: "0 6px 24px rgba(13,148,136,0.4)",
+                  boxShadow: "0 6px 24px rgba(30,58,138,0.4)",
                   transform: "translateY(-1px)",
                 },
                 transition: "all 0.2s ease",
@@ -249,7 +249,6 @@ export default function SignupPage() {
         </Box>
       </Box>
 
-      {/* Right panel — branding */}
       <Box
         sx={{
           display: { xs: "none", md: "flex" },
@@ -260,8 +259,8 @@ export default function SignupPage() {
           px: 6,
           background: (t) =>
             t.palette.mode === "dark"
-              ? "linear-gradient(145deg, #042f2e 0%, #0d2137 60%, #0b1120 100%)"
-              : "linear-gradient(145deg, #ccfbf1 0%, #e0f2fe 60%, #f0fdfa 100%)",
+              ? "linear-gradient(145deg, #0b1120 0%, #0d1e3d 60%, #0f172a 100%)"
+              : "linear-gradient(145deg, #eff6ff 0%, #dbeafe 60%, #e0f2fe 100%)",
           position: "relative",
           overflow: "hidden",
         }}
@@ -301,7 +300,7 @@ export default function SignupPage() {
               justifyContent: "center",
               mx: "auto",
               mb: 3,
-              boxShadow: "0 8px 32px rgba(13,148,136,0.35)",
+              boxShadow: "0 8px 32px rgba(30,58,138,0.35)",
             }}
           >
             <TravelExploreIcon sx={{ color: "white", fontSize: 38 }} />

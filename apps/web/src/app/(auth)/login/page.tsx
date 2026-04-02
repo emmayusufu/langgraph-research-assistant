@@ -20,7 +20,6 @@ const FEATURES = [
 export default function LoginPage() {
   return (
     <Box sx={{ minHeight: "100vh", display: "flex", bgcolor: "background.default" }}>
-      {/* Left panel — branding */}
       <Box
         sx={{
           display: { xs: "none", md: "flex" },
@@ -31,13 +30,12 @@ export default function LoginPage() {
           py: 6,
           background: (t) =>
             t.palette.mode === "dark"
-              ? "linear-gradient(145deg, #0b1120 0%, #0d2137 60%, #042f2e 100%)"
-              : "linear-gradient(145deg, #f0fdfa 0%, #ccfbf1 60%, #e0f2fe 100%)",
+              ? "linear-gradient(145deg, #0b1120 0%, #0d1e3d 60%, #0f172a 100%)"
+              : "linear-gradient(145deg, #eff6ff 0%, #dbeafe 60%, #e0f2fe 100%)",
           position: "relative",
           overflow: "hidden",
         }}
       >
-        {/* Decorative circles */}
         {[
           { size: 340, top: -80, right: -100, opacity: 0.06 },
           { size: 200, bottom: 60, left: -60, opacity: 0.05 },
@@ -62,7 +60,6 @@ export default function LoginPage() {
           />
         ))}
 
-        {/* Logo */}
         <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 8 }}>
           <Box
             sx={{
@@ -73,7 +70,7 @@ export default function LoginPage() {
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              boxShadow: "0 4px 16px rgba(13,148,136,0.35)",
+              boxShadow: "0 4px 16px rgba(30,58,138,0.35)",
             }}
           >
             <TravelExploreIcon sx={{ color: "white", fontSize: 22 }} />
@@ -110,8 +107,8 @@ export default function LoginPage() {
                     borderRadius: "10px",
                     bgcolor: (t) =>
                       t.palette.mode === "dark"
-                        ? "rgba(45,212,191,0.12)"
-                        : "rgba(13,148,136,0.1)",
+                        ? "rgba(96,165,250,0.12)"
+                        : "rgba(30,58,138,0.1)",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
@@ -129,7 +126,6 @@ export default function LoginPage() {
         </Box>
       </Box>
 
-      {/* Right panel — form */}
       <Box
         sx={{
           flex: 1,
@@ -141,7 +137,6 @@ export default function LoginPage() {
           py: 6,
         }}
       >
-        {/* Mobile logo */}
         <Box
           sx={{
             display: { xs: "flex", md: "none" },
@@ -187,9 +182,9 @@ export default function LoginPage() {
               fontSize: "0.95rem",
               fontWeight: 700,
               borderRadius: "14px",
-              boxShadow: "0 4px 20px rgba(13,148,136,0.3)",
+              boxShadow: "0 4px 20px rgba(30,58,138,0.3)",
               "&:hover": {
-                boxShadow: "0 6px 24px rgba(13,148,136,0.4)",
+                boxShadow: "0 6px 24px rgba(30,58,138,0.4)",
                 transform: "translateY(-1px)",
               },
               transition: "all 0.2s ease",
