@@ -1,5 +1,5 @@
 import operator
-from typing import Annotated, Literal
+from typing import Annotated
 
 from langchain_core.messages import AnyMessage
 from langgraph.graph.message import add_messages
@@ -13,7 +13,6 @@ class ResearchState(TypedDict):
     code_results: Annotated[list[dict], operator.add]
     synthesis: str
     output: str
-    output_mode: Literal["chat", "report"]
     messages: Annotated[list[AnyMessage], add_messages]
     next_agent: str
     completed_agents: Annotated[list[str], operator.add]

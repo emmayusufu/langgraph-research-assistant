@@ -9,9 +9,7 @@ def test_research_state_has_required_keys():
         "code_results": [],
         "synthesis": "",
         "output": "",
-        "output_mode": "chat",
         "messages": [],
         "next_agent": "",
     }
     assert state["query"] == "test query"
-    assert state["output_mode"] == "chat"
