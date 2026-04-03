@@ -1,4 +1,4 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8742";
 
 export async function postResearch(query: string, outputMode: string) {
   const response = await fetch(`${API_BASE}/api/research`, {
