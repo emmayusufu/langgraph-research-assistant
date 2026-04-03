@@ -21,35 +21,12 @@ Research results:
 Code examples:
 {code_results}"""
 
-REPORT_PROMPT = """You are a technical report writer. Given research results and code examples, write a structured markdown report with these sections:
-
-## Summary
-Brief overview of findings.
-
-## Key Findings
-Detailed findings with citations.
-
-## Code Examples
-Relevant code with explanations.
-
-## Sources
-List all sources as clickable links.
-
-Research results:
-{research_results}
-
-Code examples:
-{code_results}"""
-
 
 def writer_node(state: dict) -> dict:
     research_json = json.dumps(state["research_results"][:10], indent=2)
     code_json = json.dumps(state["code_results"][:10], indent=2)
 
-    if state["output_mode"] == "report":
-        prompt = REPORT_PROMPT.format(research_results=research_json, code_results=code_json)
-    else:
-        prompt = CHAT_PROMPT.format(research_results=research_json, code_results=code_json)
+    prompt = CHAT_PROMPT.format(research_results=research_json, code_results=code_json)
 
     response = llm.invoke(
         [

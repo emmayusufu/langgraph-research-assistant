@@ -22,7 +22,6 @@ def test_planner_produces_sub_tasks():
         "code_results": [],
         "synthesis": "",
         "output": "",
-        "output_mode": "chat",
         "messages": [],
         "next_agent": "",
     }
@@ -35,7 +34,8 @@ def test_planner_produces_sub_tasks():
 
 
 def test_researcher_produces_results():
-    mock_search = MagicMock(
+    mock_search = MagicMock()
+    mock_search.invoke = MagicMock(
         return_value=[
             {
                 "title": "FastAPI Docs",
@@ -43,13 +43,6 @@ def test_researcher_produces_results():
                 "snippet": "FastAPI framework",
             }
         ]
-    )
-    mock_reader = MagicMock(
-        return_value={
-            "title": "FastAPI",
-            "content": "FastAPI is a modern framework",
-            "url": "https://fastapi.tiangolo.com",
-        }
     )
 
     state: ResearchState = {
@@ -59,15 +52,11 @@ def test_researcher_produces_results():
         "code_results": [],
         "synthesis": "",
         "output": "",
-        "output_mode": "chat",
         "messages": [],
         "next_agent": "",
     }
 
-    with (
-        patch("app.agents.researcher.search_web", mock_search),
-        patch("app.agents.researcher.read_url", mock_reader),
-    ):
+    with patch("app.agents.researcher.search_web", mock_search):
         result = researcher_node(state)
 
     assert "research_results" in result
@@ -75,7 +64,8 @@ def test_researcher_produces_results():
 
 
 def test_coder_produces_code_results():
-    mock_github = MagicMock(
+    mock_github = MagicMock()
+    mock_github.invoke = MagicMock(
         return_value=[
             {
                 "repo": "user/repo",
@@ -85,13 +75,6 @@ def test_coder_produces_code_results():
             }
         ]
     )
-    mock_reader = MagicMock(
-        return_value={
-            "title": "main.py",
-            "content": "def hello(): pass",
-            "url": "https://github.com/user/repo",
-        }
-    )
 
     state: ResearchState = {
         "query": "FastAPI WebSocket example",
@@ -100,22 +83,18 @@ def test_coder_produces_code_results():
         "code_results": [],
         "synthesis": "",
         "output": "",
-        "output_mode": "chat",
         "messages": [],
         "next_agent": "",
     }
 
-    with (
-        patch("app.agents.coder.search_github_code", mock_github),
-        patch("app.agents.coder.read_url", mock_reader),
-    ):
+    with patch("app.agents.coder.search_github_code", mock_github):
         result = coder_node(state)
 
     assert "code_results" in result
     assert len(result["code_results"]) > 0
 
 
-def test_writer_chat_mode():
+def test_writer_produces_output():
     mock_llm = MagicMock()
     mock_llm.invoke.return_value = AIMessage(
         content="FastAPI supports WebSockets natively [1](https://fastapi.tiangolo.com)."
@@ -142,39 +121,6 @@ def test_writer_chat_mode():
         ],
         "synthesis": "",
         "output": "",
-        "output_mode": "chat",
-        "messages": [],
-        "next_agent": "",
-    }
-
-    with patch("app.agents.writer.llm", mock_llm):
-        result = writer_node(state)
-
-    assert "output" in result
-    assert len(result["output"]) > 0
-
-
-def test_writer_report_mode():
-    mock_llm = MagicMock()
-    mock_llm.invoke.return_value = AIMessage(
-        content="## Summary\nFastAPI WebSocket support\n## Sources\n- https://fastapi.tiangolo.com"
-    )
-
-    state: ResearchState = {
-        "query": "How does FastAPI handle WebSockets?",
-        "sub_tasks": [],
-        "research_results": [
-            {
-                "source_url": "https://fastapi.tiangolo.com",
-                "title": "FastAPI",
-                "content_summary": "WebSocket support",
-                "relevance_score": 1.0,
-            }
-        ],
-        "code_results": [],
-        "synthesis": "",
-        "output": "",
-        "output_mode": "report",
         "messages": [],
         "next_agent": "",
     }

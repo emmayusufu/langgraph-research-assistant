@@ -1,7 +1,5 @@
-import asyncio
 import json
 from contextlib import asynccontextmanager
-from typing import Literal
 
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -16,7 +14,7 @@ from app.models.user import User
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI) -> None:
+async def lifespan(app: FastAPI):
     await init_pool()
     yield
     await close_pool()
@@ -37,7 +35,7 @@ app.add_middleware(
 graph = build_graph()
 
 
-def _initial_state(query: str, output_mode: str) -> dict:
+def _initial_state(query: str) -> dict:
     return {
         "query": query,
         "sub_tasks": [],
@@ -45,7 +43,6 @@ def _initial_state(query: str, output_mode: str) -> dict:
         "code_results": [],
         "synthesis": "",
         "output": "",
-        "output_mode": output_mode,
         "messages": [HumanMessage(content=query)],
         "next_agent": "",
         "completed_agents": [],
@@ -56,7 +53,6 @@ def _initial_state(query: str, output_mode: str) -> dict:
 
 class ResearchRequest(BaseModel):
     query: str
-    output_mode: Literal["chat", "report"] = "chat"
 
 
 @app.get("/health")
@@ -67,10 +63,7 @@ async def health():
 @app.post("/api/research")
 async def research(request: ResearchRequest, user: User = Depends(current_user)):
     try:
-        result = await asyncio.to_thread(
-            graph.invoke,
-            _initial_state(request.query, request.output_mode),
-        )
+        result = await graph.ainvoke(_initial_state(request.query))
         return {
             "output": result.get("output", ""),
             "research_results": result.get("research_results", []),
@@ -89,26 +82,15 @@ def _serialize_message(msg):
 @app.post("/api/research/stream")
 async def research_stream(request: ResearchRequest, user: User = Depends(current_user)):
     async def event_generator():
-        state = _initial_state(request.query, request.output_mode)
-
-        def run_stream():
-            events = []
-            for event in graph.stream(state, stream_mode="updates"):
-                for node_name, node_output in event.items():
-                    serializable = {}
-                    for k, v in node_output.items():
-                        if k == "messages":
-                            serializable[k] = [_serialize_message(m) for m in v]
-                        else:
-                            serializable[k] = v
-                    events.append({"agent": node_name, "data": serializable})
-            return events
-
-        events = await asyncio.to_thread(run_stream)
-
-        for event in events:
-            yield f"data: {json.dumps(event)}\n\n"
-
+        async for event in graph.astream(_initial_state(request.query), stream_mode="updates"):
+            for node_name, node_output in event.items():
+                serializable = {}
+                for k, v in node_output.items():
+                    if k == "messages":
+                        serializable[k] = [_serialize_message(m) for m in v]
+                    else:
+                        serializable[k] = v
+                yield f"data: {json.dumps({'agent': node_name, 'data': serializable})}\n\n"
         yield 'data: {"type": "done"}\n\n'
 
     return StreamingResponse(
