@@ -23,6 +23,7 @@ function zFetch(path: string, method: string, token: string, body?: unknown): Pr
         port: ZITADEL_PORT,
         path,
         method,
+        timeout: 5000,
         headers: {
           Host: ZITADEL_HOST,
           Authorization: `Bearer ${token}`,
@@ -44,6 +45,7 @@ function zFetch(path: string, method: string, token: string, body?: unknown): Pr
       }
     );
     req.on("error", reject);
+    req.on("timeout", () => { req.destroy(new Error("Zitadel request timed out")); });
     if (buf) req.write(buf);
     req.end();
   });
@@ -114,6 +116,11 @@ export async function POST(req: NextRequest) {
         );
       }
       const { callbackUri } = finalRes.json<{ callbackUri: string }>();
+
+      const expectedOrigin = new URL(ZITADEL_ISSUER).origin;
+      if (!callbackUri.startsWith(expectedOrigin)) {
+        return NextResponse.json({ error: "Invalid callback URI" }, { status: 500 });
+      }
 
       const response = NextResponse.json({ callbackUri });
       response.headers.set(
