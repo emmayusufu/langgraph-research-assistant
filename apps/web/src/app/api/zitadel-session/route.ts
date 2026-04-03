@@ -7,6 +7,7 @@ const ZITADEL_HOST = new URL(ZITADEL_ISSUER).host;
 const ZITADEL_HOSTNAME = new URL(ZITADEL_INTERNAL).hostname;
 const ZITADEL_PORT = parseInt(new URL(ZITADEL_INTERNAL).port || "80");
 const LOGIN_CLIENT_TOKEN = process.env.ZITADEL_LOGIN_CLIENT_TOKEN!;
+const NEXTAUTH_URL = process.env.NEXTAUTH_URL ?? "http://localhost";
 
 interface ZRes {
   ok: boolean;
@@ -87,7 +88,6 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: "Session expired — please start over" }, { status: 400 });
       }
 
-      // Verify password — updates session, returns new sessionToken
       const patchRes = await zFetch(`/v2/sessions/${sessionId}`, "PATCH", LOGIN_CLIENT_TOKEN, {
         checks: { password: { password } },
         sessionToken,
@@ -101,12 +101,11 @@ export async function POST(req: NextRequest) {
       }
       const { sessionToken: updatedToken } = patchRes.json<{ sessionToken: string }>();
 
-      // Finalize auth request — links session to OIDC flow, returns callbackUri
       const finalRes = await zFetch(
-        `/v2/oidc/auth_requests/${authRequestId}/set_session`,
+        `/v2/oidc/auth_requests/${authRequestId}`,
         "POST",
         LOGIN_CLIENT_TOKEN,
-        { sessionId, sessionToken: updatedToken }
+        { session: { sessionId, sessionToken: updatedToken } }
       );
       if (!finalRes.ok) {
         const err = finalRes.json<{ message?: string }>();
@@ -115,14 +114,14 @@ export async function POST(req: NextRequest) {
           { status: 500 }
         );
       }
-      const { callbackUri } = finalRes.json<{ callbackUri: string }>();
+      const { callbackUrl } = finalRes.json<{ callbackUrl: string }>();
 
-      const expectedOrigin = new URL(ZITADEL_ISSUER).origin;
-      if (!callbackUri.startsWith(expectedOrigin)) {
+      const expectedOrigin = new URL(NEXTAUTH_URL).origin;
+      if (!callbackUrl.startsWith(expectedOrigin)) {
         return NextResponse.json({ error: "Invalid callback URI" }, { status: 500 });
       }
 
-      const response = NextResponse.json({ callbackUri });
+      const response = NextResponse.json({ callbackUri: callbackUrl });
       response.headers.set(
         "Set-Cookie",
         `${COOKIE}=; HttpOnly; SameSite=Lax; Path=/api/zitadel-session; Max-Age=0`

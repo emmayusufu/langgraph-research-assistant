@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
@@ -10,16 +10,16 @@ import InputAdornment from "@mui/material/InputAdornment";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
-import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
+import EmailOutlinedIcon from "@mui/icons-material/EmailOutlined";
 
 const inputSx = { "& .MuiOutlinedInput-root": { borderRadius: "12px" } };
 
-function PasswordForm() {
+function LoginNameForm() {
   const params = useSearchParams();
+  const router = useRouter();
   const authRequestId = params.get("authRequest") ?? "";
-  const sessionId = params.get("sessionId") ?? "";
 
-  const [password, setPassword] = useState("");
+  const [loginName, setLoginName] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -31,18 +31,20 @@ function PasswordForm() {
       const res = await fetch("/api/zitadel-session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "authenticate", sessionId, authRequestId, password }),
+        body: JSON.stringify({ action: "start-session", loginName }),
       });
-      const data = await res.json() as { callbackUri?: string; error?: string };
+      const data = await res.json() as { sessionId?: string; error?: string };
       if (!res.ok) {
-        setError(data.error ?? "Authentication failed");
+        setError(data.error ?? "Something went wrong");
         return;
       }
-      if (!data.callbackUri) {
-        setError("Unexpected error — no callback URI returned");
+      if (!data.sessionId) {
+        setError("Unexpected error — no session returned");
         return;
       }
-      window.location.href = data.callbackUri;
+      router.push(
+        `/auth/login/password?authRequest=${encodeURIComponent(authRequestId)}&sessionId=${encodeURIComponent(data.sessionId)}`
+      );
     } catch {
       setError("Network error — please try again");
     } finally {
@@ -53,10 +55,10 @@ function PasswordForm() {
   return (
     <>
       <Typography variant="h5" fontWeight={800} letterSpacing="-0.02em" sx={{ mb: 0.75 }}>
-        Enter your password
+        Welcome back
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 4 }}>
-        Almost there
+        Enter your email to continue
       </Typography>
 
       {error && (
@@ -67,10 +69,11 @@ function PasswordForm() {
 
       <Box component="form" onSubmit={handleSubmit}>
         <TextField
-          label="Password"
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
+          label="Email"
+          type="email"
+          value={loginName}
+          onChange={(e) => setLoginName(e.target.value)}
+          placeholder="you@example.com"
           required
           fullWidth
           autoFocus
@@ -79,7 +82,7 @@ function PasswordForm() {
             input: {
               startAdornment: (
                 <InputAdornment position="start">
-                  <LockOutlinedIcon sx={{ fontSize: 18, color: "text.disabled" }} />
+                  <EmailOutlinedIcon sx={{ fontSize: 18, color: "text.disabled" }} />
                 </InputAdornment>
               ),
             },
@@ -90,47 +93,49 @@ function PasswordForm() {
           variant="contained"
           size="large"
           fullWidth
-          disabled={loading || !password}
+          disabled={loading || !loginName}
           endIcon={loading ? undefined : <ArrowForwardIcon />}
           sx={{
             py: 1.5,
             fontWeight: 700,
             borderRadius: "14px",
-            boxShadow: "0 4px 20px rgba(13,148,136,0.3)",
+            boxShadow: "0 4px 20px rgba(30,58,138,0.3)",
             "&:hover:not(:disabled)": {
-              boxShadow: "0 6px 24px rgba(13,148,136,0.4)",
+              boxShadow: "0 6px 24px rgba(30,58,138,0.4)",
               transform: "translateY(-1px)",
             },
             transition: "all 0.2s ease",
           }}
         >
-          {loading ? <CircularProgress size={20} sx={{ color: "white" }} /> : "Sign in"}
+          {loading ? <CircularProgress size={20} sx={{ color: "white" }} /> : "Continue"}
         </Button>
       </Box>
 
-      <Box sx={{ mt: 3, textAlign: "center" }}>
-        <Box
-          component="a"
-          href={`/auth?authRequest=${encodeURIComponent(authRequestId)}`}
-          sx={{
-            color: "primary.main",
-            fontWeight: 600,
-            fontSize: "0.85rem",
-            textDecoration: "none",
-            "&:hover": { textDecoration: "underline" },
-          }}
-        >
-          ← Use a different email
-        </Box>
+      <Box sx={{ mt: 4, textAlign: "center" }}>
+        <Typography variant="body2" color="text.secondary">
+          New here?{" "}
+          <Box
+            component="a"
+            href="/signup"
+            sx={{
+              color: "primary.main",
+              fontWeight: 600,
+              textDecoration: "none",
+              "&:hover": { textDecoration: "underline" },
+            }}
+          >
+            Create your workspace
+          </Box>
+        </Typography>
       </Box>
     </>
   );
 }
 
-export default function PasswordPage() {
+export default function AuthLoginPage() {
   return (
     <Suspense fallback={<CircularProgress sx={{ display: "block", mx: "auto", mt: 8 }} />}>
-      <PasswordForm />
+      <LoginNameForm />
     </Suspense>
   );
 }

@@ -145,15 +145,12 @@ async function apiMaybeConflict(token: string, method: string, path: string, bod
 
 
 async function applyBranding(token: string): Promise<void> {
-  // Apply teal colour scheme + Nunito font matching the web app theme.
-  // Logo upload requires gRPC streaming (not available via REST in v4); set it
-  // manually in the Zitadel console or serve /logo.svg from the web app.
   await api(token, "PUT", "/admin/v1/policies/label", {
-    primaryColor: "#0d9488",
+    primaryColor: "#1e3a8a",
     backgroundColor: "#f8fafb",
     warnColor: "#f43f5e",
     fontColor: "#0f172a",
-    primaryColorDark: "#2dd4bf",
+    primaryColorDark: "#60a5fa",
     backgroundColorDark: "#0b1120",
     warnColorDark: "#f43f5e",
     fontColorDark: "#e2e8f0",
@@ -190,15 +187,21 @@ async function setupLoginClient(token: string): Promise<void> {
     roles: ["IAM_LOGIN_CLIENT"],
   });
 
-  const patRes = await makeRequest(token, "POST", `/v2/users/${userId}/pats`);
+  const patRes = await makeRequest(token, "POST", `/v2/users/${userId}/pats`, { expirationDate: "2030-01-01T00:00:00Z" });
   const patData = await patRes.json() as { token?: string };
-  if (patRes.ok && patData.token) {
-    console.log("\n=== Login Client ===");
-    console.log(`ZITADEL_LOGIN_CLIENT_TOKEN=${patData.token}`);
-    console.log("Add to .env");
-  } else {
-    console.log("Login client already configured — manage PATs via Zitadel console if needed");
+  if (!patRes.ok || !patData.token) {
+    throw new Error(`PAT creation failed for login-client (${userId}): ${JSON.stringify(patData)}`);
   }
+  console.log("\n=== Login Client ===");
+  console.log(`ZITADEL_LOGIN_CLIENT_TOKEN=${patData.token}`);
+  console.log("Add to .env");
+}
+
+async function applyLoginV2Feature(token: string): Promise<void> {
+  await api(token, "PUT", "/v2/features/instance", {
+    loginV2: { required: true, baseUri: LOGIN_BASE_URI },
+  });
+  console.log(`Login V2 feature set (baseUri: ${LOGIN_BASE_URI})`);
 }
 
 async function main(): Promise<void> {
@@ -207,6 +210,7 @@ async function main(): Promise<void> {
   const token = await getAccessToken(keyData);
 
   await applyBranding(token);
+  await applyLoginV2Feature(token);
   await setupLoginClient(token);
 
   const githubId = process.env.GITHUB_CLIENT_ID;

@@ -1,6 +1,6 @@
 "use client";
 
-import { createTheme, alpha } from "@mui/material/styles";
+import { createTheme } from "@mui/material/styles";
 
 const shared = {
   typography: {
@@ -47,7 +47,7 @@ export const lightTheme = createTheme({
   ...shared,
   palette: {
     mode: "light",
-    primary: { main: "#0d9488", light: "#ccfbf1", dark: "#0f766e" },
+    primary: { main: "#1e3a8a", light: "#dbeafe", dark: "#1e40af" },
     secondary: { main: "#6366f1" },
     background: { default: "#f8fafb", paper: "#ffffff" },
     text: { primary: "#0f172a", secondary: "#64748b" },
@@ -59,7 +59,7 @@ export const darkTheme = createTheme({
   ...shared,
   palette: {
     mode: "dark",
-    primary: { main: "#2dd4bf", light: "#042f2e", dark: "#14b8a6" },
+    primary: { main: "#60a5fa", light: "#1e3a8a", dark: "#3b82f6" },
     secondary: { main: "#818cf8" },
     background: { default: "#0b1120", paper: "#131c31" },
     text: { primary: "#e2e8f0", secondary: "#94a3b8" },
