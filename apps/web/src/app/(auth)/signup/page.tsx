@@ -306,7 +306,7 @@ export default function SignupPage() {
             <TravelExploreIcon sx={{ color: "white", fontSize: 38 }} />
           </Box>
           <Typography variant="h5" fontWeight={800} letterSpacing="-0.02em" sx={{ mb: 2 }}>
-            Your team's research,{" "}
+            Your team&apos;s research,{" "}
             <Box component="span" sx={{ color: "primary.main" }}>
               accelerated.
             </Box>

@@ -1,7 +1,9 @@
-from typing import Callable
+from collections.abc import Callable
+
 from fastapi import HTTPException, Request
 from fastapi.responses import Response
-from app.db import acquire
+
+from app.db import Acquire
 from app.models.user import User
 
 
@@ -18,7 +20,7 @@ async def attach_user(request: Request, call_next: Callable) -> Response:
 
 
 async def _upsert_profile(user: User) -> None:
-    async with acquire() as conn:
+    async with Acquire() as conn:
         await conn.execute(
             """
             INSERT INTO user_profiles (zitadel_user_id, display_name)

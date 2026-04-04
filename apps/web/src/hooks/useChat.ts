@@ -34,7 +34,7 @@ export function useChat(): UseChatReturn {
     let finalSources: ResearchResult[] = [];
 
     try {
-      await streamResearch(content, "chat", (event: StreamEvent) => {
+      await streamResearch(content, (event: StreamEvent) => {
         if (event.type === "done") return;
 
         if (event.agent) {

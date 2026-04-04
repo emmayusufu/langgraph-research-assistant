@@ -18,6 +18,7 @@ select = [
 ignore = [
     "E501",  # line length handled by formatter
     "TC001", # don't move runtime imports in tests
+    "B008",  # FastAPI dependency injection pattern
 ]
 
 [tool.ruff.lint.isort]

@@ -1,11 +1,13 @@
-from fastapi.testclient import TestClient
 from unittest.mock import AsyncMock, patch
+
+from fastapi.testclient import TestClient
+
 from app.main import app
 
 
 def test_research_without_user_headers_returns_401():
     client = TestClient(app, raise_server_exceptions=False)
-    resp = client.post("/api/research", json={"query": "test", "output_mode": "chat"})
+    resp = client.post("/api/research", json={"query": "test"})
     assert resp.status_code == 401
 
 
@@ -14,7 +16,7 @@ def test_research_with_user_headers_passes_auth():
         client = TestClient(app, raise_server_exceptions=False)
         resp = client.post(
             "/api/research",
-            json={"query": "test", "output_mode": "chat"},
+            json={"query": "test"},
             headers={
                 "X-User-Id": "user123",
                 "X-User-Org": "org456",

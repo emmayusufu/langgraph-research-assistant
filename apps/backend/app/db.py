@@ -1,5 +1,6 @@
-import asyncpg
 import os
+
+import asyncpg
 
 _pool: asyncpg.Pool | None = None
 
@@ -22,7 +23,7 @@ def pool() -> asyncpg.Pool:
     return _pool
 
 
-class acquire:
+class Acquire:
     async def __aenter__(self) -> asyncpg.Connection:
         self._conn = await pool().acquire()
         return self._conn

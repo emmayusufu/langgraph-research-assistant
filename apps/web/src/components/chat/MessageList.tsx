@@ -52,7 +52,7 @@ export function MessageList({ messages }: MessageListProps) {
             What would you like to research?
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Ask any technical question and I'll search the web for you.
+            Ask any technical question and I&apos;ll search the web for you.
           </Typography>
         </Box>
       </Box>

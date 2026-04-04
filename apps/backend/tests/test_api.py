@@ -3,9 +3,10 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from fastapi.testclient import TestClient
-from httpx import AsyncClient
+from httpx import ASGITransport, AsyncClient
 
 from app.main import app
+from app.middleware.auth import current_user as real_current_user
 
 
 def test_health_endpoint():
@@ -45,9 +46,6 @@ async def test_stream_endpoint_yields_events_as_produced():
     mock_user = MagicMock()
     mock_user.id = "test-user-id"
 
-    from httpx import ASGITransport
-    from app.middleware.auth import current_user as real_current_user
-
     app.dependency_overrides[real_current_user] = lambda: mock_user
     try:
         with (
@@ -58,15 +56,19 @@ async def test_stream_endpoint_yields_events_as_produced():
                 response = await ac.post(
                     "/api/research/stream",
                     json={"query": "test query"},
-                    headers={"X-User-Id": "test-user-id", "X-User-Org": "org", "X-User-Email": "t@t.com"},
+                    headers={
+                        "X-User-Id": "test-user-id",
+                        "X-User-Org": "org",
+                        "X-User-Email": "t@t.com",
+                    },
                 )
     finally:
         app.dependency_overrides.pop(real_current_user, None)
 
     assert response.status_code == 200
     assert "text/event-stream" in response.headers["content-type"]
-    lines = [l for l in response.text.splitlines() if l.startswith("data: ")]
-    events = [json.loads(l[6:]) for l in lines]
+    lines = [line for line in response.text.splitlines() if line.startswith("data: ")]
+    events = [json.loads(line[6:]) for line in lines]
     agents = [e.get("agent") for e in events if "agent" in e]
     assert "writer" in agents
     assert any(e.get("type") == "done" for e in events)

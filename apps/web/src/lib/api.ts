@@ -1,10 +1,10 @@
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8742";
 
-export async function postResearch(query: string, outputMode: string) {
+export async function postResearch(query: string) {
   const response = await fetch(`${API_BASE}/api/research`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ query, output_mode: outputMode }),
+    body: JSON.stringify({ query }),
   });
   if (!response.ok) {
     throw new Error(`Research request failed: ${response.statusText}`);
@@ -29,13 +29,12 @@ export interface StreamEvent {
 
 export async function streamResearch(
   query: string,
-  outputMode: string,
   onEvent: (event: StreamEvent) => void,
 ): Promise<void> {
   const response = await fetch(`${API_BASE}/api/research/stream`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ query, output_mode: outputMode }),
+    body: JSON.stringify({ query }),
   });
 
   if (!response.ok) {
