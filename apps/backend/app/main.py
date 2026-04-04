@@ -8,6 +8,7 @@ from langchain_core.messages import HumanMessage
 from pydantic import BaseModel
 
 from app.db import close_pool, init_pool
+from app.db import sessions as db_sessions
 from app.graph import build_graph
 from app.middleware.auth import attach_user, current_user
 from app.models.user import User
@@ -63,7 +64,7 @@ async def health():
 
 
 @app.post("/api/research")
-async def research(request: ResearchRequest, user: User | None = Depends(current_user)):
+async def research(request: ResearchRequest, user: User = Depends(current_user)):
     try:
         result = await graph.ainvoke(_initial_state(request.query))
         return {
@@ -82,8 +83,16 @@ def _serialize_message(msg):
 
 
 @app.post("/api/research/stream")
-async def research_stream(request: ResearchRequest, user: User | None = Depends(current_user)):
+async def research_stream(request: ResearchRequest, user: User = Depends(current_user)):
     async def event_generator():
+        session_id = None
+        try:
+            session_id = await db_sessions.create_session(user.id, request.query[:80])
+            await db_sessions.save_message(session_id, "user", request.query)
+        except Exception:
+            pass
+
+        output = ""
         async for event in graph.astream(_initial_state(request.query), stream_mode="updates"):
             for node_name, node_output in event.items():
                 serializable = {}
@@ -92,8 +101,21 @@ async def research_stream(request: ResearchRequest, user: User | None = Depends(
                         serializable[k] = [_serialize_message(m) for m in v]
                     else:
                         serializable[k] = v
+                if node_output.get("output"):
+                    output = node_output["output"]
                 yield f"data: {json.dumps({'agent': node_name, 'data': serializable})}\n\n"
-        yield 'data: {"type": "done"}\n\n'
+
+        if session_id and output:
+            try:
+                await db_sessions.save_message(session_id, "assistant", output)
+                await db_sessions.bump_updated_at(session_id)
+            except Exception:
+                pass
+
+        done: dict = {"type": "done"}
+        if session_id:
+            done["session_id"] = str(session_id)
+        yield f"data: {json.dumps(done)}\n\n"
 
     return StreamingResponse(
         event_generator(),
