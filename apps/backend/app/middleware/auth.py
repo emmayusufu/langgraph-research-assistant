@@ -23,12 +23,15 @@ async def _upsert_profile(user: User) -> None:
     async with Acquire() as conn:
         await conn.execute(
             """
-            INSERT INTO user_profiles (zitadel_user_id, display_name)
-            VALUES ($1, $2)
-            ON CONFLICT (zitadel_user_id) DO NOTHING
+            INSERT INTO user_profiles (zitadel_user_id, display_name, email)
+            VALUES ($1, $2, $3)
+            ON CONFLICT (zitadel_user_id) DO UPDATE
+                SET email = EXCLUDED.email,
+                    display_name = EXCLUDED.display_name
             """,
             user.id,
             user.email.split("@")[0] or None,
+            user.email or None,
         )
 
 
