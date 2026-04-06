@@ -8,10 +8,10 @@ import remarkGfm from "remark-gfm";
 interface DocEditorProps {
   content: string;
   readOnly: boolean;
-  onBlur: (content: string) => void;
+  onContentSave: (content: string) => void;
 }
 
-export function DocEditor({ content, readOnly, onBlur }: DocEditorProps) {
+export function DocEditor({ content, readOnly, onContentSave }: DocEditorProps) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(content);
 
@@ -22,7 +22,7 @@ export function DocEditor({ content, readOnly, onBlur }: DocEditorProps) {
   const handleBlur = () => {
     setEditing(false);
     if (draft !== content) {
-      onBlur(draft);
+      onContentSave(draft);
     }
   };
 
