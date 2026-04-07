@@ -5,8 +5,8 @@ import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
+import EditNoteIcon from "@mui/icons-material/EditNote";
 import SearchIcon from "@mui/icons-material/Search";
-import TravelExploreIcon from "@mui/icons-material/TravelExplore";
 
 type CircleDecor = {
   size: number;
@@ -24,9 +24,9 @@ const CIRCLES: CircleDecor[] = [
 ];
 
 const FEATURES = [
-  { icon: SearchIcon, text: "Web & academic search across multiple sources" },
-  { icon: AutoAwesomeIcon, text: "Multi-agent reasoning with LangGraph" },
-  { icon: DescriptionOutlinedIcon, text: "Structured reports with citations" },
+  { icon: EditNoteIcon, text: "AI-assisted writing that thinks with you" },
+  { icon: SearchIcon, text: "Web & academic research across multiple sources" },
+  { icon: DescriptionOutlinedIcon, text: "Private docs with real-time collaboration" },
 ];
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
@@ -81,10 +81,10 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
               boxShadow: "0 4px 16px rgba(30,58,138,0.35)",
             }}
           >
-            <TravelExploreIcon sx={{ color: "white", fontSize: 22 }} />
+            <AutoAwesomeIcon sx={{ color: "white", fontSize: 22 }} />
           </Box>
           <Typography fontWeight={800} fontSize="1.15rem" letterSpacing="-0.02em">
-            Research
+            Lumen
           </Typography>
         </Box>
 
@@ -96,14 +96,13 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
             lineHeight={1.15}
             sx={{ mb: 2 }}
           >
-            Research smarter,{" "}
+            Write clearly.{" "}
             <Box component="span" sx={{ color: "primary.main" }}>
-              not harder.
+              Think deeply.
             </Box>
           </Typography>
           <Typography variant="body1" color="text.secondary" sx={{ mb: 5, maxWidth: 340 }}>
-            A multi-agent assistant that searches, synthesises and writes — so you can focus on
-            the insights.
+            An AI writing and research tool that helps you produce your best work.
           </Typography>
           <Stack spacing={2.5}>
             {FEATURES.map(({ icon: Icon, text }) => (
@@ -159,10 +158,10 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
               justifyContent: "center",
             }}
           >
-            <TravelExploreIcon sx={{ color: "white", fontSize: 20 }} />
+            <AutoAwesomeIcon sx={{ color: "white", fontSize: 20 }} />
           </Box>
           <Typography fontWeight={800} fontSize="1.1rem">
-            Research
+            Lumen
           </Typography>
         </Box>
 

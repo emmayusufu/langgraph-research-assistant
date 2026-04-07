@@ -10,7 +10,7 @@ import ArticleRoundedIcon from "@mui/icons-material/ArticleRounded";
 import DeleteOutlineRoundedIcon from "@mui/icons-material/DeleteOutlineRounded";
 import HistoryRoundedIcon from "@mui/icons-material/HistoryRounded";
 import LogoutRoundedIcon from "@mui/icons-material/LogoutRounded";
-import TravelExploreIcon from "@mui/icons-material/TravelExplore";
+import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import Link from "next/link";
 import { signOut } from "next-auth/react";
 import { ThemeToggle } from "./ThemeToggle";
@@ -84,7 +84,7 @@ export function Header({ onClear = () => {}, onHistoryToggle = () => {}, activeA
             flexShrink: 0,
           }}
         >
-          <TravelExploreIcon
+          <AutoAwesomeIcon
             sx={{
               color: "white",
               fontSize: 15,
@@ -101,7 +101,7 @@ export function Header({ onClear = () => {}, onHistoryToggle = () => {}, activeA
           noWrap
           sx={{ fontWeight: 700, fontSize: "0.82rem", letterSpacing: "-0.01em", color: "text.primary" }}
         >
-          Research
+          Lumen
         </Typography>
 
         <Button
