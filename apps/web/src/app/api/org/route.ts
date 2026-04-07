@@ -13,7 +13,8 @@ function zPost(
   path: string,
   token: string,
   body: string,
-  extra: Record<string, string> = {}
+  extra: Record<string, string> = {},
+  method = "POST"
 ): Promise<{ ok: boolean; status: number; json: () => Promise<unknown> }> {
   return new Promise((resolve, reject) => {
     const parsed = new URL(`${ZITADEL_URL}${path}`);
@@ -22,7 +23,7 @@ function zPost(
         hostname: parsed.hostname,
         port: parsed.port || 80,
         path: parsed.pathname,
-        method: "POST",
+        method,
         headers: {
           Host: ZITADEL_HOST,
           Authorization: `Bearer ${token}`,
@@ -129,16 +130,17 @@ export async function POST(req: NextRequest) {
     }
     const { id: orgId } = await orgRes.json() as { id: string };
 
+    // v2 API: isVerified + password creates user in active state directly (no init flow)
     const userRes = await zPost(
-      "/management/v1/users/human",
+      "/v2/users/human",
       token,
       JSON.stringify({
-        userName: email,
-        profile: { firstName, lastName },
-        email: { email, isEmailVerified: false },
+        username: email,
+        profile: { givenName: firstName, familyName: lastName },
+        email: { email, isVerified: true },
         password: { password, changeRequired: false },
-      }),
-      { "x-zitadel-orgid": orgId }
+        organisation: { orgId },
+      })
     );
     if (!userRes.ok) {
       const err = await userRes.json() as { message?: string };

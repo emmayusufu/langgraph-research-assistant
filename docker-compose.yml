@@ -149,6 +149,7 @@ services:
     environment:
       - NEXT_PUBLIC_API_URL=http://localhost:80
       - API_URL=http://traefik:80
+      - BACKEND_URL=http://research-api:8742
       - NEXTAUTH_URL=${NEXTAUTH_URL:-http://localhost:3847}
       - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
       - ZITADEL_ISSUER=http://${ZITADEL_DOMAIN:-localhost}:8085

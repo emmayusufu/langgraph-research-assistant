@@ -70,7 +70,7 @@ export default function LoginPage() {
           sx={{
             py: 1.5,
             fontSize: "0.95rem",
-            fontWeight: 700,
+            fontWeight: 500,
             borderRadius: "14px",
             boxShadow: "0 4px 20px rgba(30,58,138,0.3)",
             "&:hover": {

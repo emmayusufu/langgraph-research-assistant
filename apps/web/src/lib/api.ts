@@ -1,6 +1,6 @@
 import type { Session, SessionDetail, Doc, DocDetail, UserSearchResult } from "@/lib/types";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8742";
+const API_BASE = "/api/backend";
 
 export async function postResearch(query: string) {
   const response = await fetch(`${API_BASE}/api/research`, {
