@@ -14,8 +14,8 @@ async def search_users(email: str, user: User = Depends(current_user)):
         return []
     return [
         {
-            "user_id": result["zitadel_user_id"],
-            "display_name": result["display_name"],
+            "user_id": result["id"],
+            "display_name": result["name"],
             "email": result["email"],
         }
     ]

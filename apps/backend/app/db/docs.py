@@ -115,9 +115,9 @@ async def list_collaborators(doc_id: uuid.UUID) -> list[dict]:
     async with Acquire() as conn:
         rows = await conn.fetch(
             """
-            SELECT dc.user_id, dc.role, up.display_name, up.email
+            SELECT dc.user_id, dc.role, u.name AS display_name, u.email
             FROM doc_collaborators dc
-            JOIN user_profiles up ON up.zitadel_user_id = dc.user_id
+            JOIN users u ON u.id = dc.user_id
             WHERE dc.doc_id = $1
             """,
             doc_id,

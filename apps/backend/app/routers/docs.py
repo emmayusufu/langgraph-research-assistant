@@ -102,9 +102,9 @@ async def add_collaborator(
     target = await users_db.get_user_by_email(body.email)
     if not target:
         raise HTTPException(status_code=404, detail="User not found")
-    if target["zitadel_user_id"] == user.id:
+    if target["id"] == user.id:
         raise HTTPException(status_code=422, detail="Cannot add owner as collaborator")
-    await db.add_collaborator(doc_id, target["zitadel_user_id"], body.role)
+    await db.add_collaborator(doc_id, target["id"], body.role)
 
 
 @router.delete("/{doc_id}/collaborators/{collab_user_id}", status_code=204)

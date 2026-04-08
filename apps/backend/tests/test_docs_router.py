@@ -169,11 +169,7 @@ def test_add_collaborator_user_not_found():
 
 def test_add_collaborator_succeeds():
     doc_id = uuid.uuid4()
-    target_user = {
-        "zitadel_user_id": "other-user",
-        "display_name": "Other",
-        "email": "other@test.com",
-    }
+    target_user = {"id": "other-user", "name": "Other", "email": "other@test.com"}
 
     app.dependency_overrides[real_current_user] = make_user
     try:
@@ -198,7 +194,7 @@ def test_add_collaborator_succeeds():
 
 def test_add_collaborator_owner_cannot_add_self():
     doc_id = uuid.uuid4()
-    self_user = {"zitadel_user_id": "user123", "display_name": "Self", "email": "t@t.com"}
+    self_user = {"id": "user123", "name": "Self", "email": "t@t.com"}
 
     app.dependency_overrides[real_current_user] = make_user
     try:
