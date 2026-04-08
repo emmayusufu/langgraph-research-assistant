@@ -13,6 +13,7 @@ import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import { Header } from "@/components/layout/Header";
 import { CollaboratorList } from "@/components/docs/CollaboratorList";
 import { DocEditor } from "@/components/docs/DocEditor";
+import { DocResearchPanel } from "@/components/docs/DocResearchPanel";
 import { useDoc } from "@/hooks/useDoc";
 import { useDocs } from "@/hooks/useDocs";
 import type { DocDetail } from "@/lib/types";
@@ -27,9 +28,10 @@ interface DocBodyProps {
   saveContent: (content: string) => Promise<void>;
   addCollaborator: (email: string, role: "editor" | "viewer") => Promise<void>;
   removeCollaborator: (userId: string) => Promise<void>;
+  onAskAI: () => void;
 }
 
-function DocBody({ doc, saveTitle, saveContent, addCollaborator, removeCollaborator }: DocBodyProps) {
+function DocBody({ doc, saveTitle, saveContent, addCollaborator, removeCollaborator, onAskAI }: DocBodyProps) {
   const titleRef = useRef<HTMLInputElement>(null);
   const canEdit = doc.role === "owner" || doc.role === "editor";
 
@@ -58,7 +60,12 @@ function DocBody({ doc, saveTitle, saveContent, addCollaborator, removeCollabora
           p: 0,
         }}
       />
-      <DocEditor content={doc.content} readOnly={!canEdit} onContentSave={saveContent} />
+      <DocEditor
+        content={doc.content}
+        readOnly={!canEdit}
+        onContentSave={saveContent}
+        onAskAI={canEdit ? onAskAI : undefined}
+      />
       <Box sx={{ mt: 4 }}>
         <CollaboratorList
           collaborators={doc.collaborators}
@@ -77,6 +84,7 @@ export default function DocPage({ params }: Props) {
   const { doc, saveTitle, saveContent, addCollaborator, removeCollaborator, saveError, clearSaveError } =
     useDoc(id);
   const { docs, createDoc } = useDocs();
+  const [researchOpen, setResearchOpen] = useState(false);
   const [creating, setCreating] = useState(false);
 
   const handleCreate = async () => {
@@ -159,8 +167,10 @@ export default function DocPage({ params }: Props) {
           saveContent={saveContent}
           addCollaborator={addCollaborator}
           removeCollaborator={removeCollaborator}
+          onAskAI={() => setResearchOpen(true)}
         />
       </Box>
+      <DocResearchPanel open={researchOpen} onClose={() => setResearchOpen(false)} />
       <Snackbar
         open={!!saveError}
         message={saveError}
