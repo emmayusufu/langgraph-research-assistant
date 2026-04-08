@@ -48,7 +48,6 @@ async def test_stream_endpoint_yields_events_and_session_id():
     try:
         with (
             patch("app.main.graph", mock_graph),
-            patch("app.middleware.auth._upsert_profile", new=AsyncMock()),
             patch("app.db.sessions.create_session", new=AsyncMock(return_value=session_id)),
             patch("app.db.sessions.save_message", new=AsyncMock()),
             patch("app.db.sessions.bump_updated_at", new=AsyncMock()),

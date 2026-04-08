@@ -1,41 +1,55 @@
+import os
 from collections.abc import Callable
 
+import httpx
+import jwt
 from fastapi import HTTPException, Request
 from fastapi.responses import Response
 
-from app.db import Acquire
 from app.models.user import User
+from app.utils.token import decode_token
+
+OPA_URL = os.environ.get("OPA_URL", "http://opa:8181")
 
 
 async def attach_user(request: Request, call_next: Callable) -> Response:
-    user_id = request.headers.get("X-User-Id", "")
-    request.state.user = User(
-        id=user_id,
-        org_id=request.headers.get("X-User-Org", ""),
-        email=request.headers.get("X-User-Email", ""),
-    )
-    if user_id:
-        await _upsert_profile(request.state.user)
+    token = request.cookies.get("token") or _bearer(request)
+    user = User(id="", org_id="", email="")
+    if token:
+        try:
+            payload = decode_token(token)
+            if not await _is_revoked(payload["jti"]):
+                user = User(
+                    id=payload["sub"],
+                    org_id=payload["org_id"],
+                    email=payload["email"],
+                    name=payload.get("name", ""),
+                )
+        except jwt.PyJWTError:
+            pass
+    request.state.user = user
     return await call_next(request)
-
-
-async def _upsert_profile(user: User) -> None:
-    async with Acquire() as conn:
-        await conn.execute(
-            """
-            INSERT INTO user_profiles (zitadel_user_id, display_name, email)
-            VALUES ($1, $2, $3)
-            ON CONFLICT (zitadel_user_id) DO UPDATE
-                SET email = EXCLUDED.email,
-                    display_name = EXCLUDED.display_name
-            """,
-            user.id,
-            user.email.split("@")[0] or None,
-            user.email or None,
-        )
 
 
 def current_user(request: Request) -> User:
     if not request.state.user.id:
         raise HTTPException(status_code=401)
     return request.state.user
+
+
+def _bearer(request: Request) -> str | None:
+    auth = request.headers.get("authorization", "")
+    return auth[7:] if auth.startswith("Bearer ") else None
+
+
+async def _is_revoked(jti: str) -> bool:
+    try:
+        async with httpx.AsyncClient() as client:
+            resp = await client.post(
+                f"{OPA_URL}/v1/data/jwt/allow",
+                json={"input": {"jti": jti}},
+                timeout=3.0,
+            )
+            return not resp.json().get("result", False)
+    except Exception:
+        return False
