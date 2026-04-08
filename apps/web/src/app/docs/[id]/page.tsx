@@ -10,11 +10,9 @@ import Snackbar from "@mui/material/Snackbar";
 import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
-import ScienceRoundedIcon from "@mui/icons-material/ScienceRounded";
 import { Header } from "@/components/layout/Header";
 import { CollaboratorList } from "@/components/docs/CollaboratorList";
 import { DocEditor } from "@/components/docs/DocEditor";
-import { DocResearchPanel } from "@/components/docs/DocResearchPanel";
 import { useDoc } from "@/hooks/useDoc";
 import { useDocs } from "@/hooks/useDocs";
 import type { DocDetail } from "@/lib/types";
@@ -79,7 +77,6 @@ export default function DocPage({ params }: Props) {
   const { doc, saveTitle, saveContent, addCollaborator, removeCollaborator, saveError, clearSaveError } =
     useDoc(id);
   const { docs, createDoc } = useDocs();
-  const [researchOpen, setResearchOpen] = useState(false);
   const [creating, setCreating] = useState(false);
 
   const handleCreate = async () => {
@@ -164,22 +161,6 @@ export default function DocPage({ params }: Props) {
           removeCollaborator={removeCollaborator}
         />
       </Box>
-      <Tooltip title="Research assistant">
-        <IconButton
-          onClick={() => setResearchOpen(true)}
-          sx={{
-            position: "fixed",
-            bottom: 24,
-            right: 24,
-            bgcolor: "primary.main",
-            color: "white",
-            "&:hover": { bgcolor: "primary.dark" },
-          }}
-        >
-          <ScienceRoundedIcon />
-        </IconButton>
-      </Tooltip>
-      <DocResearchPanel open={researchOpen} onClose={() => setResearchOpen(false)} />
       <Snackbar
         open={!!saveError}
         message={saveError}
