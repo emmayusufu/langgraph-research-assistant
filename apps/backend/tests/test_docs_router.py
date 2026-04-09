@@ -1,6 +1,6 @@
 import uuid
 from datetime import UTC, datetime
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 from fastapi.testclient import TestClient
 
@@ -11,6 +11,24 @@ from app.models.user import User
 
 def make_user():
     return User(id="user123", org_id="org1", email="t@t.com")
+
+
+def _opa_allow():
+    mock_resp = MagicMock()
+    mock_resp.json.return_value = {"result": True}
+    mock_client = AsyncMock()
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.post.return_value = mock_resp
+    return mock_client
+
+
+def _opa_deny():
+    mock_resp = MagicMock()
+    mock_resp.json.return_value = {"result": False}
+    mock_client = AsyncMock()
+    mock_client.__aenter__.return_value = mock_client
+    mock_client.post.return_value = mock_resp
+    return mock_client
 
 
 def test_list_docs_requires_auth():
@@ -91,6 +109,7 @@ def test_get_doc_returns_content():
             patch(
                 "app.routers.docs.db.list_collaborators", new_callable=AsyncMock, return_value=[]
             ),
+            patch("app.middleware.opa.httpx.AsyncClient", return_value=_opa_allow()),
         ):
             response = TestClient(app).get(f"/api/v1/content/docs/{doc_id}")
     finally:
@@ -107,8 +126,13 @@ def test_patch_doc_forbidden_for_viewer():
 
     app.dependency_overrides[real_current_user] = make_user
     try:
-        with patch("app.routers.docs.db.get_role", new_callable=AsyncMock, return_value="viewer"):
-            response = TestClient(app).patch(f"/api/v1/content/docs/{doc_id}", json={"content": "new"})
+        with (
+            patch("app.routers.docs.db.get_role", new_callable=AsyncMock, return_value="viewer"),
+            patch("app.middleware.opa.httpx.AsyncClient", return_value=_opa_deny()),
+        ):
+            response = TestClient(app).patch(
+                f"/api/v1/content/docs/{doc_id}", json={"content": "new"}
+            )
     finally:
         app.dependency_overrides.pop(real_current_user, None)
 
@@ -120,7 +144,10 @@ def test_delete_doc_forbidden_for_editor():
 
     app.dependency_overrides[real_current_user] = make_user
     try:
-        with patch("app.routers.docs.db.get_role", new_callable=AsyncMock, return_value="editor"):
+        with (
+            patch("app.routers.docs.db.get_role", new_callable=AsyncMock, return_value="editor"),
+            patch("app.middleware.opa.httpx.AsyncClient", return_value=_opa_deny()),
+        ):
             response = TestClient(app).delete(f"/api/v1/content/docs/{doc_id}")
     finally:
         app.dependency_overrides.pop(real_current_user, None)
@@ -136,6 +163,7 @@ def test_delete_doc_returns_204_for_owner():
         with (
             patch("app.routers.docs.db.get_role", new_callable=AsyncMock, return_value="owner"),
             patch("app.routers.docs.db.delete_doc", new_callable=AsyncMock, return_value=True),
+            patch("app.middleware.opa.httpx.AsyncClient", return_value=_opa_allow()),
         ):
             response = TestClient(app).delete(f"/api/v1/content/docs/{doc_id}")
     finally:
@@ -156,6 +184,7 @@ def test_add_collaborator_user_not_found():
                 new_callable=AsyncMock,
                 return_value=None,
             ),
+            patch("app.middleware.opa.httpx.AsyncClient", return_value=_opa_allow()),
         ):
             response = TestClient(app).post(
                 f"/api/v1/content/docs/{doc_id}/collaborators",
@@ -181,6 +210,7 @@ def test_add_collaborator_succeeds():
                 return_value=target_user,
             ),
             patch("app.routers.docs.db.add_collaborator", new_callable=AsyncMock),
+            patch("app.middleware.opa.httpx.AsyncClient", return_value=_opa_allow()),
         ):
             response = TestClient(app).post(
                 f"/api/v1/content/docs/{doc_id}/collaborators",
@@ -205,6 +235,7 @@ def test_add_collaborator_owner_cannot_add_self():
                 new_callable=AsyncMock,
                 return_value=self_user,
             ),
+            patch("app.middleware.opa.httpx.AsyncClient", return_value=_opa_allow()),
         ):
             response = TestClient(app).post(
                 f"/api/v1/content/docs/{doc_id}/collaborators",
@@ -221,7 +252,10 @@ def test_add_collaborator_invalid_role_returns_422():
 
     app.dependency_overrides[real_current_user] = make_user
     try:
-        with patch("app.routers.docs.db.get_role", new_callable=AsyncMock, return_value="owner"):
+        with (
+            patch("app.routers.docs.db.get_role", new_callable=AsyncMock, return_value="owner"),
+            patch("app.middleware.opa.httpx.AsyncClient", return_value=_opa_allow()),
+        ):
             response = TestClient(app).post(
                 f"/api/v1/content/docs/{doc_id}/collaborators",
                 json={"email": "other@test.com", "role": "admin"},
@@ -237,8 +271,13 @@ def test_remove_collaborator_forbidden_for_non_owner():
 
     app.dependency_overrides[real_current_user] = make_user
     try:
-        with patch("app.routers.docs.db.get_role", new_callable=AsyncMock, return_value="editor"):
-            response = TestClient(app).delete(f"/api/v1/content/docs/{doc_id}/collaborators/some-user")
+        with (
+            patch("app.routers.docs.db.get_role", new_callable=AsyncMock, return_value="editor"),
+            patch("app.middleware.opa.httpx.AsyncClient", return_value=_opa_deny()),
+        ):
+            response = TestClient(app).delete(
+                f"/api/v1/content/docs/{doc_id}/collaborators/some-user"
+            )
     finally:
         app.dependency_overrides.pop(real_current_user, None)
 

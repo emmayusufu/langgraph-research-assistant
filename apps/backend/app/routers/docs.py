@@ -6,6 +6,7 @@ from pydantic import BaseModel
 from app.db import docs as db
 from app.db import users as users_db
 from app.middleware.auth import current_user
+from app.middleware.opa import authorize
 from app.models.user import User
 
 router = APIRouter(prefix="/api/v1/content/docs")
@@ -49,8 +50,7 @@ async def list_docs(user: User = Depends(current_user)):
 @router.get("/{doc_id}")
 async def get_doc(doc_id: uuid.UUID, user: User = Depends(current_user)):
     role = await db.get_role(doc_id, user.id)
-    if not role:
-        raise HTTPException(status_code=403)
+    await authorize(role, "read")
     doc = await db.get_doc(doc_id)
     if not doc:
         raise HTTPException(status_code=404)
@@ -77,16 +77,14 @@ async def get_doc(doc_id: uuid.UUID, user: User = Depends(current_user)):
 @router.patch("/{doc_id}", status_code=204)
 async def update_doc(doc_id: uuid.UUID, body: UpdateDocRequest, user: User = Depends(current_user)):
     role = await db.get_role(doc_id, user.id)
-    if not role or role == "viewer":
-        raise HTTPException(status_code=403)
+    await authorize(role, "write")
     await db.update_doc(doc_id, body.title, body.content)
 
 
 @router.delete("/{doc_id}", status_code=204)
 async def delete_doc(doc_id: uuid.UUID, user: User = Depends(current_user)):
     role = await db.get_role(doc_id, user.id)
-    if role != "owner":
-        raise HTTPException(status_code=403)
+    await authorize(role, "delete")
     await db.delete_doc(doc_id)
 
 
@@ -95,8 +93,7 @@ async def add_collaborator(
     doc_id: uuid.UUID, body: AddCollaboratorRequest, user: User = Depends(current_user)
 ):
     role = await db.get_role(doc_id, user.id)
-    if role != "owner":
-        raise HTTPException(status_code=403)
+    await authorize(role, "manage_collaborators")
     if body.role not in ("editor", "viewer"):
         raise HTTPException(status_code=422, detail="role must be 'editor' or 'viewer'")
     target = await users_db.get_user_by_email(body.email)
@@ -112,6 +109,5 @@ async def remove_collaborator(
     doc_id: uuid.UUID, collab_user_id: str, user: User = Depends(current_user)
 ):
     role = await db.get_role(doc_id, user.id)
-    if role != "owner":
-        raise HTTPException(status_code=403)
+    await authorize(role, "manage_collaborators")
     await db.remove_collaborator(doc_id, collab_user_id)
