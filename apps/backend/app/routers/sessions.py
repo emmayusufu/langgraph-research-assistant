@@ -6,7 +6,7 @@ from app.db import sessions as db
 from app.middleware.auth import current_user
 from app.models.user import User
 
-router = APIRouter(prefix="/api/sessions")
+router = APIRouter(prefix="/api/v1/sessions")
 
 
 @router.get("")

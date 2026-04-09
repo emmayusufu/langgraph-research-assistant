@@ -20,13 +20,13 @@ def test_health_endpoint():
 
 def test_research_endpoint_requires_auth():
     client = TestClient(app, raise_server_exceptions=False)
-    response = client.post("/api/research", json={"query": "test query"})
+    response = client.post("/api/v1/research", json={"query": "test query"})
     assert response.status_code == 401
 
 
 def test_stream_endpoint_requires_auth():
     client = TestClient(app, raise_server_exceptions=False)
-    response = client.post("/api/research/stream", json={"query": "test query"})
+    response = client.post("/api/v1/research/stream", json={"query": "test query"})
     assert response.status_code == 401
 
 
@@ -54,7 +54,7 @@ async def test_stream_endpoint_yields_events_and_session_id():
         ):
             async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
                 response = await ac.post(
-                    "/api/research/stream",
+                    "/api/v1/research/stream",
                     json={"query": "test query"},
                     headers={
                         "X-User-Id": "test-user-id",

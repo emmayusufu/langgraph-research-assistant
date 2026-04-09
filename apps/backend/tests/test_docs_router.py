@@ -15,7 +15,7 @@ def make_user():
 
 def test_list_docs_requires_auth():
     client = TestClient(app, raise_server_exceptions=False)
-    assert client.get("/api/content/docs").status_code == 401
+    assert client.get("/api/v1/content/docs").status_code == 401
 
 
 def test_list_docs_returns_docs():
@@ -33,7 +33,7 @@ def test_list_docs_returns_docs():
     app.dependency_overrides[real_current_user] = make_user
     try:
         with patch("app.routers.docs.db.list_docs", new_callable=AsyncMock, return_value=rows):
-            response = TestClient(app).get("/api/content/docs")
+            response = TestClient(app).get("/api/v1/content/docs")
     finally:
         app.dependency_overrides.pop(real_current_user, None)
 
@@ -50,7 +50,7 @@ def test_create_doc_returns_id():
     app.dependency_overrides[real_current_user] = make_user
     try:
         with patch("app.routers.docs.db.create_doc", new_callable=AsyncMock, return_value=new_id):
-            response = TestClient(app).post("/api/content/docs", json={"title": "Test"})
+            response = TestClient(app).post("/api/v1/content/docs", json={"title": "Test"})
     finally:
         app.dependency_overrides.pop(real_current_user, None)
 
@@ -64,7 +64,7 @@ def test_get_doc_returns_403_for_non_member():
     app.dependency_overrides[real_current_user] = make_user
     try:
         with patch("app.routers.docs.db.get_role", new_callable=AsyncMock, return_value=None):
-            response = TestClient(app).get(f"/api/content/docs/{doc_id}")
+            response = TestClient(app).get(f"/api/v1/content/docs/{doc_id}")
     finally:
         app.dependency_overrides.pop(real_current_user, None)
 
@@ -92,7 +92,7 @@ def test_get_doc_returns_content():
                 "app.routers.docs.db.list_collaborators", new_callable=AsyncMock, return_value=[]
             ),
         ):
-            response = TestClient(app).get(f"/api/content/docs/{doc_id}")
+            response = TestClient(app).get(f"/api/v1/content/docs/{doc_id}")
     finally:
         app.dependency_overrides.pop(real_current_user, None)
 
@@ -108,7 +108,7 @@ def test_patch_doc_forbidden_for_viewer():
     app.dependency_overrides[real_current_user] = make_user
     try:
         with patch("app.routers.docs.db.get_role", new_callable=AsyncMock, return_value="viewer"):
-            response = TestClient(app).patch(f"/api/content/docs/{doc_id}", json={"content": "new"})
+            response = TestClient(app).patch(f"/api/v1/content/docs/{doc_id}", json={"content": "new"})
     finally:
         app.dependency_overrides.pop(real_current_user, None)
 
@@ -121,7 +121,7 @@ def test_delete_doc_forbidden_for_editor():
     app.dependency_overrides[real_current_user] = make_user
     try:
         with patch("app.routers.docs.db.get_role", new_callable=AsyncMock, return_value="editor"):
-            response = TestClient(app).delete(f"/api/content/docs/{doc_id}")
+            response = TestClient(app).delete(f"/api/v1/content/docs/{doc_id}")
     finally:
         app.dependency_overrides.pop(real_current_user, None)
 
@@ -137,7 +137,7 @@ def test_delete_doc_returns_204_for_owner():
             patch("app.routers.docs.db.get_role", new_callable=AsyncMock, return_value="owner"),
             patch("app.routers.docs.db.delete_doc", new_callable=AsyncMock, return_value=True),
         ):
-            response = TestClient(app).delete(f"/api/content/docs/{doc_id}")
+            response = TestClient(app).delete(f"/api/v1/content/docs/{doc_id}")
     finally:
         app.dependency_overrides.pop(real_current_user, None)
 
@@ -158,7 +158,7 @@ def test_add_collaborator_user_not_found():
             ),
         ):
             response = TestClient(app).post(
-                f"/api/content/docs/{doc_id}/collaborators",
+                f"/api/v1/content/docs/{doc_id}/collaborators",
                 json={"email": "nobody@test.com", "role": "editor"},
             )
     finally:
@@ -183,7 +183,7 @@ def test_add_collaborator_succeeds():
             patch("app.routers.docs.db.add_collaborator", new_callable=AsyncMock),
         ):
             response = TestClient(app).post(
-                f"/api/content/docs/{doc_id}/collaborators",
+                f"/api/v1/content/docs/{doc_id}/collaborators",
                 json={"email": "other@test.com", "role": "editor"},
             )
     finally:
@@ -207,7 +207,7 @@ def test_add_collaborator_owner_cannot_add_self():
             ),
         ):
             response = TestClient(app).post(
-                f"/api/content/docs/{doc_id}/collaborators",
+                f"/api/v1/content/docs/{doc_id}/collaborators",
                 json={"email": "t@t.com", "role": "editor"},
             )
     finally:
@@ -223,7 +223,7 @@ def test_add_collaborator_invalid_role_returns_422():
     try:
         with patch("app.routers.docs.db.get_role", new_callable=AsyncMock, return_value="owner"):
             response = TestClient(app).post(
-                f"/api/content/docs/{doc_id}/collaborators",
+                f"/api/v1/content/docs/{doc_id}/collaborators",
                 json={"email": "other@test.com", "role": "admin"},
             )
     finally:
@@ -238,7 +238,7 @@ def test_remove_collaborator_forbidden_for_non_owner():
     app.dependency_overrides[real_current_user] = make_user
     try:
         with patch("app.routers.docs.db.get_role", new_callable=AsyncMock, return_value="editor"):
-            response = TestClient(app).delete(f"/api/content/docs/{doc_id}/collaborators/some-user")
+            response = TestClient(app).delete(f"/api/v1/content/docs/{doc_id}/collaborators/some-user")
     finally:
         app.dependency_overrides.pop(real_current_user, None)
 
@@ -251,7 +251,7 @@ def test_search_users_returns_empty_when_not_found():
         with patch(
             "app.routers.users.db.get_user_by_email", new_callable=AsyncMock, return_value=None
         ):
-            response = TestClient(app).get("/api/users/search?email=nobody@test.com")
+            response = TestClient(app).get("/api/v1/users/search?email=nobody@test.com")
     finally:
         app.dependency_overrides.pop(real_current_user, None)
 

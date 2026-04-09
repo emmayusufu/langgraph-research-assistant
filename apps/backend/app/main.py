@@ -69,7 +69,7 @@ async def health():
     return {"status": "ok"}
 
 
-@app.post("/api/research")
+@app.post("/api/v1/research")
 async def research(request: ResearchRequest, user: User = Depends(current_user)):
     try:
         result = await graph.ainvoke(_initial_state(request.query))
@@ -88,7 +88,7 @@ def _serialize_message(msg):
     return {}
 
 
-@app.post("/api/research/stream")
+@app.post("/api/v1/research/stream")
 async def research_stream(request: ResearchRequest, user: User = Depends(current_user)):
     async def event_generator():
         session_id = None

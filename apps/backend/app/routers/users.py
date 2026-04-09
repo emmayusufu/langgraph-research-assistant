@@ -4,7 +4,7 @@ from app.db import users as db
 from app.middleware.auth import current_user
 from app.models.user import User
 
-router = APIRouter(prefix="/api/users")
+router = APIRouter(prefix="/api/v1/users")
 
 
 @router.get("/search")

@@ -15,7 +15,7 @@ def make_user():
 
 def test_list_sessions_requires_auth():
     client = TestClient(app, raise_server_exceptions=False)
-    assert client.get("/api/sessions").status_code == 401
+    assert client.get("/api/v1/sessions").status_code == 401
 
 
 def test_list_sessions_returns_sessions():
@@ -29,7 +29,7 @@ def test_list_sessions_returns_sessions():
         with patch(
             "app.routers.sessions.db.list_sessions", new_callable=AsyncMock, return_value=rows
         ):
-            response = TestClient(app).get("/api/sessions")
+            response = TestClient(app).get("/api/v1/sessions")
     finally:
         app.dependency_overrides.pop(real_current_user, None)
 
@@ -48,7 +48,7 @@ def test_get_session_returns_404_when_missing():
         with patch(
             "app.routers.sessions.db.get_session", new_callable=AsyncMock, return_value=None
         ):
-            response = TestClient(app).get(f"/api/sessions/{session_id}")
+            response = TestClient(app).get(f"/api/v1/sessions/{session_id}")
     finally:
         app.dependency_overrides.pop(real_current_user, None)
 
@@ -70,7 +70,7 @@ def test_get_session_returns_session_with_messages():
         with patch(
             "app.routers.sessions.db.get_session", new_callable=AsyncMock, return_value=session_data
         ):
-            response = TestClient(app).get(f"/api/sessions/{session_id}")
+            response = TestClient(app).get(f"/api/v1/sessions/{session_id}")
     finally:
         app.dependency_overrides.pop(real_current_user, None)
 
@@ -89,7 +89,7 @@ def test_delete_session_returns_204():
         with patch(
             "app.routers.sessions.db.delete_session", new_callable=AsyncMock, return_value=True
         ):
-            response = TestClient(app).delete(f"/api/sessions/{session_id}")
+            response = TestClient(app).delete(f"/api/v1/sessions/{session_id}")
     finally:
         app.dependency_overrides.pop(real_current_user, None)
 
@@ -104,7 +104,7 @@ def test_delete_session_returns_404_when_missing():
         with patch(
             "app.routers.sessions.db.delete_session", new_callable=AsyncMock, return_value=False
         ):
-            response = TestClient(app).delete(f"/api/sessions/{session_id}")
+            response = TestClient(app).delete(f"/api/v1/sessions/{session_id}")
     finally:
         app.dependency_overrides.pop(real_current_user, None)
 

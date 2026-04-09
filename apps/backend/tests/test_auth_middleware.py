@@ -8,7 +8,7 @@ from app.utils.token import create_token
 
 def test_research_without_token_returns_401():
     client = TestClient(app, raise_server_exceptions=False)
-    resp = client.post("/api/research", json={"query": "test"})
+    resp = client.post("/api/v1/research", json={"query": "test"})
     assert resp.status_code == 401
 
 
@@ -22,7 +22,7 @@ def test_research_with_valid_jwt_passes_auth():
     ):
         client = TestClient(app, raise_server_exceptions=False)
         resp = client.post(
-            "/api/research",
+            "/api/v1/research",
             json={"query": "test"},
             cookies={"token": token},
         )

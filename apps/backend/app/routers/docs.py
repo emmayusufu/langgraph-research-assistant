@@ -8,7 +8,7 @@ from app.db import users as users_db
 from app.middleware.auth import current_user
 from app.models.user import User
 
-router = APIRouter(prefix="/api/content/docs")
+router = APIRouter(prefix="/api/v1/content/docs")
 
 
 class CreateDocRequest(BaseModel):
