@@ -1,12 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { signIn } from "next-auth/react";
 import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import CircularProgress from "@mui/material/CircularProgress";
-import Grid from "@mui/material/Grid";
 import InputAdornment from "@mui/material/InputAdornment";
 import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
@@ -38,18 +36,18 @@ export default function SignupPage() {
     e.preventDefault();
     setLoading(true);
     setError("");
-    const res = await fetch("/api/org", {
+    const res = await fetch("/api/backend/api/v1/auth/signup", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(form),
     });
     const data = await res.json();
     if (!res.ok) {
-      setError(data.error ?? "Something went wrong");
+      setError(data.detail ?? data.error ?? "Something went wrong");
       setLoading(false);
       return;
     }
-    await signIn("zitadel", { callbackUrl: "/" });
+    window.location.href = "/";
   };
 
   const inputSx = {
@@ -136,39 +134,35 @@ export default function SignupPage() {
             }}
           />
 
-          <Grid container spacing={1.5}>
-            <Grid xs={6}>
-              <TextField
-                label="First name"
-                value={form.firstName}
-                onChange={set("firstName")}
-                required
-                fullWidth
-                placeholder="Alice"
-                sx={inputSx}
-                slotProps={{
-                  input: {
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <PersonOutlineIcon sx={{ fontSize: 18, color: "text.disabled" }} />
-                      </InputAdornment>
-                    ),
-                  },
-                }}
-              />
-            </Grid>
-            <Grid xs={6}>
-              <TextField
-                label="Last name"
-                value={form.lastName}
-                onChange={set("lastName")}
-                required
-                fullWidth
-                placeholder="Smith"
-                sx={inputSx}
-              />
-            </Grid>
-          </Grid>
+          <Box sx={{ display: "flex", gap: 1.5 }}>
+            <TextField
+              label="First name"
+              value={form.firstName}
+              onChange={set("firstName")}
+              required
+              fullWidth
+              placeholder="Alice"
+              sx={inputSx}
+              slotProps={{
+                input: {
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <PersonOutlineIcon sx={{ fontSize: 18, color: "text.disabled" }} />
+                    </InputAdornment>
+                  ),
+                },
+              }}
+            />
+            <TextField
+              label="Last name"
+              value={form.lastName}
+              onChange={set("lastName")}
+              required
+              fullWidth
+              placeholder="Smith"
+              sx={inputSx}
+            />
+          </Box>
 
           <TextField
             label="Work email"

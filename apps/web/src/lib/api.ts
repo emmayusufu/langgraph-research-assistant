@@ -3,7 +3,7 @@ import type { Session, SessionDetail, Doc, DocDetail, UserSearchResult } from "@
 const API_BASE = "/api/backend";
 
 export async function postResearch(query: string) {
-  const response = await fetch(`${API_BASE}/api/research`, {
+  const response = await fetch(`${API_BASE}/api/v1/research`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ query }),
@@ -34,7 +34,7 @@ export async function streamResearch(
   query: string,
   onEvent: (event: StreamEvent) => void,
 ): Promise<void> {
-  const response = await fetch(`${API_BASE}/api/research/stream`, {
+  const response = await fetch(`${API_BASE}/api/v1/research/stream`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ query }),
@@ -72,30 +72,30 @@ export async function streamResearch(
 }
 
 export async function fetchSessions(): Promise<Session[]> {
-  const response = await fetch(`${API_BASE}/api/sessions`);
+  const response = await fetch(`${API_BASE}/api/v1/sessions`);
   if (!response.ok) throw new Error(`Failed to fetch sessions: ${response.statusText}`);
   return response.json();
 }
 
 export async function fetchSession(id: string): Promise<SessionDetail> {
-  const response = await fetch(`${API_BASE}/api/sessions/${id}`);
+  const response = await fetch(`${API_BASE}/api/v1/sessions/${id}`);
   if (!response.ok) throw new Error(`Failed to fetch session: ${response.statusText}`);
   return response.json();
 }
 
 export async function deleteSession(id: string): Promise<void> {
-  const response = await fetch(`${API_BASE}/api/sessions/${id}`, { method: "DELETE" });
+  const response = await fetch(`${API_BASE}/api/v1/sessions/${id}`, { method: "DELETE" });
   if (!response.ok) throw new Error(`Failed to delete session: ${response.statusText}`);
 }
 
 export async function fetchDocs(): Promise<Doc[]> {
-  const response = await fetch(`${API_BASE}/api/content/docs`);
+  const response = await fetch(`${API_BASE}/api/v1/content/docs`);
   if (!response.ok) throw new Error(`Failed to fetch docs: ${response.statusText}`);
   return response.json();
 }
 
 export async function createDoc(title = "Untitled"): Promise<{ id: string }> {
-  const response = await fetch(`${API_BASE}/api/content/docs`, {
+  const response = await fetch(`${API_BASE}/api/v1/content/docs`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ title }),
@@ -105,13 +105,13 @@ export async function createDoc(title = "Untitled"): Promise<{ id: string }> {
 }
 
 export async function fetchDoc(id: string): Promise<DocDetail> {
-  const response = await fetch(`${API_BASE}/api/content/docs/${id}`);
+  const response = await fetch(`${API_BASE}/api/v1/content/docs/${id}`);
   if (!response.ok) throw new Error(`Failed to fetch doc: ${response.statusText}`);
   return response.json();
 }
 
 export async function updateDoc(id: string, patch: { title?: string; content?: string }): Promise<void> {
-  const response = await fetch(`${API_BASE}/api/content/docs/${id}`, {
+  const response = await fetch(`${API_BASE}/api/v1/content/docs/${id}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(patch),
@@ -120,13 +120,13 @@ export async function updateDoc(id: string, patch: { title?: string; content?: s
 }
 
 export async function deleteDoc(id: string): Promise<void> {
-  const response = await fetch(`${API_BASE}/api/content/docs/${id}`, { method: "DELETE" });
+  const response = await fetch(`${API_BASE}/api/v1/content/docs/${id}`, { method: "DELETE" });
   if (!response.ok) throw new Error(`Failed to delete doc: ${response.statusText}`);
 }
 
 export async function searchUsers(email: string): Promise<UserSearchResult[]> {
   const response = await fetch(
-    `${API_BASE}/api/users/search?email=${encodeURIComponent(email)}`,
+    `${API_BASE}/api/v1/users/search?email=${encodeURIComponent(email)}`,
   );
   if (!response.ok) throw new Error(`Failed to search users: ${response.statusText}`);
   return response.json();
@@ -137,7 +137,7 @@ export async function addCollaborator(
   email: string,
   role: "editor" | "viewer",
 ): Promise<void> {
-  const response = await fetch(`${API_BASE}/api/content/docs/${docId}/collaborators`, {
+  const response = await fetch(`${API_BASE}/api/v1/content/docs/${docId}/collaborators`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, role }),
@@ -147,7 +147,7 @@ export async function addCollaborator(
 
 export async function removeCollaborator(docId: string, userId: string): Promise<void> {
   const response = await fetch(
-    `${API_BASE}/api/content/docs/${docId}/collaborators/${userId}`,
+    `${API_BASE}/api/v1/content/docs/${docId}/collaborators/${userId}`,
     { method: "DELETE" },
   );
   if (!response.ok) throw new Error(`Failed to remove collaborator: ${response.statusText}`);
