@@ -70,6 +70,7 @@ export function DocEditor({ content, readOnly, onContentSave, onAskAI }: DocEdit
     ],
     content,
     editable: !readOnly,
+    immediatelyRender: false,
     onBlur: ({ editor: e }) => onContentSave(e.getHTML()),
   });
 
