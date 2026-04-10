@@ -6,6 +6,7 @@ from fastapi import HTTPException, Request
 from fastapi.responses import Response
 
 from app.config import OPA_URL
+from app.db import users as users_db
 from app.models.user import User
 from app.utils.token import decode_token
 
@@ -16,7 +17,7 @@ async def attach_user(request: Request, call_next: Callable) -> Response:
     if token:
         try:
             payload = decode_token(token)
-            if not await _is_revoked(payload["jti"]):
+            if not await _is_revoked(payload["jti"]) and await users_db.get_user_by_id(payload["sub"]):
                 user = User(
                     id=payload["sub"],
                     org_id=payload["org_id"],

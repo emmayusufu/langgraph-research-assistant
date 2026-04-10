@@ -1,6 +1,15 @@
 from app.db import Acquire
 
 
+async def get_user_by_id(user_id: str) -> dict | None:
+    async with Acquire() as conn:
+        row = await conn.fetchrow(
+            "SELECT id FROM users WHERE id = $1",
+            user_id,
+        )
+        return dict(row) if row else None
+
+
 async def get_user_by_email(email: str) -> dict | None:
     async with Acquire() as conn:
         row = await conn.fetchrow(
