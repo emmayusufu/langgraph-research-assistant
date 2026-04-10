@@ -12,7 +12,6 @@ import HistoryRoundedIcon from "@mui/icons-material/HistoryRounded";
 import LogoutRoundedIcon from "@mui/icons-material/LogoutRounded";
 import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import Link from "next/link";
-import { signOut } from "next-auth/react";
 import { ThemeToggle } from "./ThemeToggle";
 
 interface HeaderProps {
@@ -31,6 +30,11 @@ const AGENT_LABELS: Record<string, string> = {
 };
 
 export function Header({ onClear = () => {}, onHistoryToggle = () => {}, activeAgent, isLoading }: HeaderProps) {
+  const handleSignOut = async () => {
+    await fetch("/api/backend/api/v1/auth/logout", { method: "POST" });
+    window.location.href = "/login";
+  };
+
   return (
     <Box
       sx={{
@@ -167,7 +171,7 @@ export function Header({ onClear = () => {}, onHistoryToggle = () => {}, activeA
 
         <Tooltip title="Sign out" arrow>
           <IconButton
-            onClick={() => signOut({ callbackUrl: "/login" })}
+            onClick={handleSignOut}
             size="small"
             sx={{ width: 28, height: 28, color: "text.secondary", "&:hover": { color: "text.primary" } }}
           >

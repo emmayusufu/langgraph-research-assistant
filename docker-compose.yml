@@ -17,45 +17,6 @@ services:
       retries: 5
     restart: unless-stopped
 
-  zitadel:
-    image: ghcr.io/zitadel/zitadel:latest
-    command: start-from-init --masterkey "${ZITADEL_MASTERKEY}" --tlsMode disabled
-    user: "0"
-    environment:
-      ZITADEL_DATABASE_POSTGRES_HOST: postgres
-      ZITADEL_DATABASE_POSTGRES_PORT: 5432
-      ZITADEL_DATABASE_POSTGRES_DATABASE: zitadel
-      ZITADEL_DATABASE_POSTGRES_USER_USERNAME: postgres
-      ZITADEL_DATABASE_POSTGRES_USER_PASSWORD: ${POSTGRES_PASSWORD}
-      ZITADEL_DATABASE_POSTGRES_USER_SSL_MODE: disable
-      ZITADEL_DATABASE_POSTGRES_ADMIN_USERNAME: postgres
-      ZITADEL_DATABASE_POSTGRES_ADMIN_PASSWORD: ${POSTGRES_PASSWORD}
-      ZITADEL_DATABASE_POSTGRES_ADMIN_SSL_MODE: disable
-      ZITADEL_TLS_ENABLED: "false"
-      ZITADEL_EXTERNALDOMAIN: ${ZITADEL_DOMAIN:-localhost}
-      ZITADEL_EXTERNALPORT: 8085
-      ZITADEL_EXTERNALPROTOCOL: http
-      ZITADEL_FIRSTINSTANCE_MACHINEKEYPATH: /machinekey/zitadel-admin-sa.json
-      ZITADEL_FIRSTINSTANCE_ORG_HUMAN_USERNAME: admin
-      ZITADEL_FIRSTINSTANCE_ORG_HUMAN_PASSWORD: ${ZITADEL_ADMIN_PASSWORD}
-      ZITADEL_FIRSTINSTANCE_ORG_MACHINE_MACHINE_USERNAME: zitadel-admin-sa
-      ZITADEL_FIRSTINSTANCE_ORG_MACHINE_MACHINE_NAME: Admin Service Account
-      ZITADEL_FIRSTINSTANCE_ORG_MACHINE_MACHINEKEY_TYPE: 1
-    volumes:
-      - zitadel_machinekey:/machinekey
-    ports:
-      - "8085:8080"
-    depends_on:
-      postgres:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "/app/zitadel", "ready"]
-      interval: 10s
-      timeout: 5s
-      retries: 20
-      start_period: 30s
-    restart: unless-stopped
-
   opa:
     image: openpolicyagent/opa:latest-debug
     command: run --server --addr :8181 /policies
@@ -70,45 +31,18 @@ services:
       retries: 5
     restart: unless-stopped
 
-  docker-proxy:
-    build:
-      context: ./docker-proxy
-      dockerfile: Dockerfile
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-    networks:
-      - traefik-proxy
-    restart: unless-stopped
-
-  traefik:
-    image: traefik:v3.3
-    command:
-      - "--configfile=/traefik.yml"
-    ports:
-      - "80:80"
-      - "8090:8080"
-    volumes:
-      - ./traefik/traefik.yml:/traefik.yml:ro
-      - ./traefik/dynamic:/dynamic:ro
-    networks:
-      - default
-      - traefik-proxy
-    depends_on:
-      - docker-proxy
-      - opa
-      - zitadel
-    restart: unless-stopped
-
   research-api:
     build:
       context: ./apps/backend
       dockerfile: Dockerfile
-    expose:
-      - "8742"
+    ports:
+      - "8742:8742"
     env_file:
       - .env
     environment:
       - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/app
+      - OPA_URL=http://opa:8181
+      - SECRET_KEY=${SECRET_KEY}
     volumes:
       - ./apps/backend/app:/app/app
       - ./apps/backend/tests:/app/tests
@@ -124,17 +58,6 @@ services:
         condition: service_healthy
       opa:
         condition: service_healthy
-      zitadel:
-        condition: service_healthy
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.research.rule=PathPrefix(`/api/research`)"
-      - "traefik.http.routers.research.middlewares=jwt-auth@file"
-      - "traefik.http.routers.research.service=research"
-      - "traefik.http.services.research.loadbalancer.server.port=8742"
-      - "traefik.http.routers.health.rule=Path(`/health`)"
-      - "traefik.http.routers.health.service=health"
-      - "traefik.http.services.health.loadbalancer.server.port=8742"
     restart: unless-stopped
 
   web:
@@ -147,19 +70,7 @@ services:
       - /app/node_modules
     command: sh -c "npm install && npm run dev"
     environment:
-      - NEXT_PUBLIC_API_URL=http://localhost:80
-      - API_URL=http://traefik:80
       - BACKEND_URL=http://research-api:8742
-      - NEXTAUTH_URL=${NEXTAUTH_URL:-http://localhost:3847}
-      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
-      - ZITADEL_ISSUER=http://${ZITADEL_DOMAIN:-localhost}:8085
-      - ZITADEL_CLIENT_ID=${ZITADEL_CLIENT_ID}
-      - ZITADEL_CLIENT_SECRET=${ZITADEL_CLIENT_SECRET}
-      - ZITADEL_MACHINE_KEY=${ZITADEL_MACHINE_KEY}
-      - ZITADEL_LOGIN_CLIENT_TOKEN=${ZITADEL_LOGIN_CLIENT_TOKEN}
-      - ZITADEL_INTERNAL_URL=http://zitadel:8080
-      - OPA_URL=http://opa:8181
-      - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/app
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:3847/ || exit 1"]
       interval: 15s
@@ -167,41 +78,9 @@ services:
       retries: 10
       start_period: 60s
     depends_on:
-      - zitadel
       - postgres
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.web.rule=PathPrefix(`/`)"
-      - "traefik.http.routers.web.priority=1"
-      - "traefik.http.services.web.loadbalancer.server.port=3847"
+      - research-api
     restart: unless-stopped
-
-  zitadel-init:
-    image: node:20-alpine
-    working_dir: /app
-    volumes:
-      - ./apps/zitadel-init:/app
-      - zitadel_machinekey:/machinekey
-    command: sh -c "npm install && npx tsx init.ts"
-    environment:
-      ZITADEL_URL: http://zitadel:8080
-      ZITADEL_DOMAIN: ${ZITADEL_DOMAIN:-localhost}
-      ZITADEL_PORT: 8085
-      MACHINE_KEY_PATH: /machinekey/zitadel-admin-sa.json
-      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID}
-      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET}
-      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
-      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
-      NEXTAUTH_REDIRECT_URI: ${NEXTAUTH_URL:-http://localhost}/api/auth/callback/zitadel
-    depends_on:
-      zitadel:
-        condition: service_healthy
-    profiles:
-      - init
-
-networks:
-  traefik-proxy:
 
 volumes:
   postgres_data:
-  zitadel_machinekey:
