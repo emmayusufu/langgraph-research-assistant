@@ -10,7 +10,6 @@ import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
-import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import EmailOutlinedIcon from "@mui/icons-material/EmailOutlined";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 
@@ -68,22 +67,9 @@ export default function LoginPage() {
               : "0 8px 40px rgba(0,0,0,0.06)",
         }}
       >
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 5 }}>
-          <Box
-            sx={{
-              width: 36,
-              height: 36,
-              borderRadius: "10px",
-              background: "linear-gradient(135deg, #6366f1, #8b5cf6)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <AutoAwesomeIcon sx={{ color: "white", fontSize: 18 }} />
-          </Box>
-          <Typography variant="h6" fontWeight={700} letterSpacing="-0.3px">
-            Research Assistant
+        <Box sx={{ mb: 5 }}>
+          <Typography fontWeight={800} fontSize="1.1rem" letterSpacing="-0.02em">
+            Lumen
           </Typography>
         </Box>
 

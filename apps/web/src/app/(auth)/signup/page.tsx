@@ -10,7 +10,6 @@ import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
-import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import BusinessIcon from "@mui/icons-material/Business";
 import EmailOutlinedIcon from "@mui/icons-material/EmailOutlined";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
@@ -81,21 +80,7 @@ export default function SignupPage() {
               : "0 8px 40px rgba(0,0,0,0.06)",
         }}
       >
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 5 }}>
-          <Box
-            sx={{
-              width: 36,
-              height: 36,
-              borderRadius: "10px",
-              bgcolor: "primary.main",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              boxShadow: "0 4px 16px rgba(30,58,138,0.35)",
-            }}
-          >
-            <AutoAwesomeIcon sx={{ color: "white", fontSize: 18 }} />
-          </Box>
+        <Box sx={{ mb: 5 }}>
           <Typography fontWeight={800} fontSize="1.1rem" letterSpacing="-0.02em">
             Lumen
           </Typography>
