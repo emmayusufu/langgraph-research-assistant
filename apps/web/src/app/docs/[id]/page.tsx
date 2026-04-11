@@ -7,6 +7,7 @@ import CircularProgress from "@mui/material/CircularProgress";
 import IconButton from "@mui/material/IconButton";
 import Snackbar from "@mui/material/Snackbar";
 import Tooltip from "@mui/material/Tooltip";
+import Typography from "@mui/material/Typography";
 import AutoAwesomeRoundedIcon from "@mui/icons-material/AutoAwesomeRounded";
 import { DocEditor } from "@/components/docs/DocEditor";
 import { DocResearchPanel } from "@/components/docs/DocResearchPanel";
@@ -38,7 +39,7 @@ export default function DocPage({ params }: Props) {
 
   if (!doc) return (
     <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}>
-      <CircularProgress size={28} />
+      <CircularProgress size={24} thickness={2} />
     </Box>
   );
 
@@ -49,12 +50,12 @@ export default function DocPage({ params }: Props) {
       <DocSidebar docs={docs} currentId={id} creating={creating} onCreate={handleCreate} />
 
       <Box sx={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", bgcolor: "background.paper" }}>
+        {/* Top bar */}
         <Box
           sx={{
-            display: "flex",
+            display: "grid",
+            gridTemplateColumns: "1fr auto 1fr",
             alignItems: "center",
-            justifyContent: "flex-end",
-            gap: 0.75,
             px: 3,
             minHeight: 44,
             borderBottom: "1px solid",
@@ -62,27 +63,58 @@ export default function DocPage({ params }: Props) {
             flexShrink: 0,
           }}
         >
-          {canEdit && (
-            <Tooltip title="Ask AI  ⌘K">
-              <IconButton
-                size="small"
-                onClick={() => setResearchOpen(true)}
-                sx={{ color: "text.secondary", "&:hover": { color: "primary.main" } }}
-              >
-                <AutoAwesomeRoundedIcon sx={{ fontSize: 16 }} />
-              </IconButton>
-            </Tooltip>
-          )}
-          <ShareButton
-            collaborators={doc.collaborators}
-            isOwner={doc.role === "owner"}
-            onAdd={addCollaborator}
-            onRemove={removeCollaborator}
-          />
+          {/* Left — empty spacer */}
+          <Box />
+
+          {/* Center — current doc title */}
+          <Typography
+            noWrap
+            sx={{
+              fontSize: "0.78rem",
+              fontWeight: 500,
+              color: "text.disabled",
+              letterSpacing: "-0.01em",
+              maxWidth: 300,
+              textAlign: "center",
+            }}
+          >
+            {doc.title || "Untitled"}
+          </Typography>
+
+          {/* Right — actions */}
+          <Box sx={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 0.75 }}>
+            {canEdit && (
+              <Tooltip title="Ask AI  ⌘K">
+                <IconButton
+                  size="small"
+                  onClick={() => setResearchOpen(true)}
+                  sx={{ color: "text.disabled", "&:hover": { color: "primary.main" }, transition: "color 0.15s" }}
+                >
+                  <AutoAwesomeRoundedIcon sx={{ fontSize: 15 }} />
+                </IconButton>
+              </Tooltip>
+            )}
+            <ShareButton
+              collaborators={doc.collaborators}
+              isOwner={doc.role === "owner"}
+              onAdd={addCollaborator}
+              onRemove={removeCollaborator}
+            />
+          </Box>
         </Box>
 
-        <Box sx={{ flex: 1, overflow: "auto" }}>
-          <Box sx={{ maxWidth: 720, mx: "auto", px: { xs: 3, md: 8 }, pt: 10, pb: 24 }}>
+        {/* Content */}
+        <Box
+          sx={{
+            flex: 1,
+            overflow: "auto",
+            background: (t) =>
+              t.palette.mode === "dark"
+                ? "#212121"
+                : "linear-gradient(180deg, #f5f6ff 0%, #ffffff 80px)",
+          }}
+        >
+          <Box sx={{ maxWidth: 720, mx: "auto", px: { xs: 3, md: 8 }, pt: 12, pb: 24 }}>
             <Box
               component="input"
               ref={titleRef}
@@ -97,16 +129,16 @@ export default function DocPage({ params }: Props) {
               sx={{
                 display: "block",
                 width: "100%",
-                fontSize: "2.5rem",
-                fontWeight: 700,
-                letterSpacing: "-0.03em",
-                lineHeight: 1.2,
+                fontSize: "2.25rem",
+                fontWeight: 800,
+                letterSpacing: "-0.04em",
+                lineHeight: 1.15,
                 border: "none",
                 outline: "none",
                 bgcolor: "transparent",
                 color: "text.primary",
                 fontFamily: "inherit",
-                mb: 0.5,
+                mb: 1,
                 p: 0,
                 "::placeholder": { color: "text.disabled" },
               }}

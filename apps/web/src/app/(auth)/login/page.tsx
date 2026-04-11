@@ -5,13 +5,10 @@ import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import CircularProgress from "@mui/material/CircularProgress";
-import InputAdornment from "@mui/material/InputAdornment";
 import Stack from "@mui/material/Stack";
-import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
-import EmailOutlinedIcon from "@mui/icons-material/EmailOutlined";
-import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
+import { FormInput } from "@/components/shared/FormInput";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -35,10 +32,6 @@ export default function LoginPage() {
       return;
     }
     window.location.href = "/";
-  };
-
-  const inputSx = {
-    "& .MuiOutlinedInput-root": { borderRadius: "12px", fontSize: "0.9rem" },
   };
 
   return (
@@ -86,38 +79,22 @@ export default function LoginPage() {
           </Alert>
         )}
 
-        <Stack component="form" onSubmit={handleSubmit} spacing={2}>
-          <TextField
+        <Stack component="form" onSubmit={handleSubmit} spacing={2.5}>
+          <FormInput
             label="Email"
             type="email"
+            placeholder="you@example.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            fullWidth
-            sx={inputSx}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <EmailOutlinedIcon fontSize="small" color="action" />
-                </InputAdornment>
-              ),
-            }}
           />
-          <TextField
+          <FormInput
             label="Password"
             type="password"
+            placeholder="••••••••"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            fullWidth
-            sx={inputSx}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <LockOutlinedIcon fontSize="small" color="action" />
-                </InputAdornment>
-              ),
-            }}
           />
           <Button
             type="submit"
@@ -125,7 +102,7 @@ export default function LoginPage() {
             fullWidth
             disabled={loading}
             endIcon={loading ? <CircularProgress size={16} color="inherit" /> : <ArrowForwardIcon />}
-            sx={{ borderRadius: "12px", py: 1.4, fontWeight: 600, mt: 1 }}
+            sx={{ borderRadius: "12px", py: 1.4, fontWeight: 600, mt: 0.5 }}
           >
             {loading ? "Signing in…" : "Sign in"}
           </Button>

@@ -5,15 +5,10 @@ import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import CircularProgress from "@mui/material/CircularProgress";
-import InputAdornment from "@mui/material/InputAdornment";
 import Stack from "@mui/material/Stack";
-import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
-import BusinessIcon from "@mui/icons-material/Business";
-import EmailOutlinedIcon from "@mui/icons-material/EmailOutlined";
-import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
-import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
+import { FormInput } from "@/components/shared/FormInput";
 
 export default function SignupPage() {
   const [form, setForm] = useState({
@@ -47,10 +42,6 @@ export default function SignupPage() {
       return;
     }
     window.location.href = "/";
-  };
-
-  const inputSx = {
-    "& .MuiOutlinedInput-root": { borderRadius: "12px", fontSize: "0.9rem" },
   };
 
   return (
@@ -99,94 +90,48 @@ export default function SignupPage() {
           </Alert>
         )}
 
-        <Stack component="form" spacing={2} onSubmit={handleSubmit}>
-          <TextField
+        <Stack component="form" spacing={2.5} onSubmit={handleSubmit}>
+          <FormInput
             label="Organisation name"
+            placeholder="Acme Corp"
             value={form.orgName}
             onChange={set("orgName")}
             required
-            fullWidth
-            placeholder="Acme Corp"
-            sx={inputSx}
-            slotProps={{
-              input: {
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <BusinessIcon sx={{ fontSize: 18, color: "text.disabled" }} />
-                  </InputAdornment>
-                ),
-              },
-            }}
           />
 
           <Box sx={{ display: "flex", gap: 1.5 }}>
-            <TextField
+            <FormInput
               label="First name"
+              placeholder="Alice"
               value={form.firstName}
               onChange={set("firstName")}
               required
-              fullWidth
-              placeholder="Alice"
-              sx={inputSx}
-              slotProps={{
-                input: {
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <PersonOutlineIcon sx={{ fontSize: 18, color: "text.disabled" }} />
-                    </InputAdornment>
-                  ),
-                },
-              }}
             />
-            <TextField
+            <FormInput
               label="Last name"
+              placeholder="Smith"
               value={form.lastName}
               onChange={set("lastName")}
               required
-              fullWidth
-              placeholder="Smith"
-              sx={inputSx}
             />
           </Box>
 
-          <TextField
+          <FormInput
             label="Work email"
             type="email"
+            placeholder="alice@acmecorp.com"
             value={form.email}
             onChange={set("email")}
             required
-            fullWidth
-            placeholder="alice@acmecorp.com"
-            sx={inputSx}
-            slotProps={{
-              input: {
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <EmailOutlinedIcon sx={{ fontSize: 18, color: "text.disabled" }} />
-                  </InputAdornment>
-                ),
-              },
-            }}
           />
 
-          <TextField
+          <FormInput
             label="Password"
             type="password"
+            placeholder="Min. 8 characters"
             value={form.password}
             onChange={set("password")}
             required
-            fullWidth
-            placeholder="Min. 8 characters"
-            sx={inputSx}
-            slotProps={{
-              input: {
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <LockOutlinedIcon sx={{ fontSize: 18, color: "text.disabled" }} />
-                  </InputAdornment>
-                ),
-              },
-            }}
           />
 
           <Button
@@ -198,7 +143,7 @@ export default function SignupPage() {
             disabled={loading}
             sx={{
               py: 1.5,
-              mt: 1,
+              mt: 0.5,
               fontSize: "0.95rem",
               fontWeight: 700,
               borderRadius: "14px",
@@ -210,28 +155,17 @@ export default function SignupPage() {
               transition: "all 0.2s ease",
             }}
           >
-            {loading ? (
-              <CircularProgress size={20} sx={{ color: "white" }} />
-            ) : (
-              "Create workspace"
-            )}
+            {loading ? <CircularProgress size={20} sx={{ color: "white" }} /> : "Create workspace"}
           </Button>
         </Stack>
 
-        <Box
-          sx={{ mt: 4, pt: 4, borderTop: 1, borderColor: "divider", textAlign: "center" }}
-        >
+        <Box sx={{ mt: 4, pt: 4, borderTop: 1, borderColor: "divider", textAlign: "center" }}>
           <Typography variant="body2" color="text.secondary">
             Already have an account?{" "}
             <Box
               component="a"
               href="/login"
-              sx={{
-                color: "primary.main",
-                fontWeight: 600,
-                textDecoration: "none",
-                "&:hover": { textDecoration: "underline" },
-              }}
+              sx={{ color: "primary.main", fontWeight: 600, textDecoration: "none", "&:hover": { textDecoration: "underline" } }}
             >
               Sign in
             </Box>

@@ -9,9 +9,9 @@ import ListItem from "@mui/material/ListItem";
 import ListItemText from "@mui/material/ListItemText";
 import MenuItem from "@mui/material/MenuItem";
 import Select from "@mui/material/Select";
-import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import PersonRemoveRoundedIcon from "@mui/icons-material/PersonRemoveRounded";
+import { FormInput } from "@/components/shared/FormInput";
 import type { DocCollaborator } from "@/lib/types";
 
 interface CollaboratorListProps {
@@ -63,15 +63,15 @@ export function CollaboratorList({ collaborators, isOwner, onAdd, onRemove }: Co
       </List>
       {isOwner && (
         <Box sx={{ display: "flex", gap: 1, mt: 1, flexWrap: "wrap", alignItems: "flex-start" }}>
-          <TextField
-            size="small"
-            placeholder="Email address"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            error={!!error}
-            helperText={error ?? " "}
-            sx={{ flex: 1, minWidth: 180 }}
-          />
+          <Box sx={{ flex: 1, minWidth: 180 }}>
+            <FormInput
+              placeholder="colleague@company.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              error={!!error}
+              errorText={error ?? undefined}
+            />
+          </Box>
           <Select
             size="small"
             value={role}
