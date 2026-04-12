@@ -1,10 +1,13 @@
 "use client";
 
 import { useEffect } from "react";
-import { useEditor, EditorContent } from "@tiptap/react";
+import { useEditor, EditorContent, ReactNodeViewRenderer } from "@tiptap/react";
 import { BubbleMenu, FloatingMenu } from "@tiptap/react/menus";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
+import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
+import { createLowlight, common } from "lowlight";
+import { CodeBlock } from "./CodeBlock";
 import Box from "@mui/material/Box";
 import Divider from "@mui/material/Divider";
 import IconButton from "@mui/material/IconButton";
@@ -24,10 +27,10 @@ interface DocEditorProps {
   content: string;
   readOnly: boolean;
   onContentSave: (content: string) => void;
+  onContentChange?: (content: string) => void;
   onAskAI?: () => void;
 }
 
-// Delete the '/' that triggered the menu, then apply the block type
 const withSlashDelete = (fn: (e: Editor) => void) => (e: Editor) => {
   const { $anchor } = e.state.selection;
   if ($anchor.parent.textContent === "/") {
@@ -40,8 +43,8 @@ const editorSx = {
   "& .ProseMirror": {
     outline: "none",
     minHeight: "60vh",
-    fontSize: "1rem",
-    lineHeight: 1.8,
+    fontSize: "1.02rem",
+    lineHeight: 1.78,
     color: "text.primary",
     caretColor: "primary.main",
     "& .is-empty::before": {
@@ -52,40 +55,22 @@ const editorSx = {
       height: 0,
       fontStyle: "italic",
     },
-    "& h1": { fontSize: "1.75rem", fontWeight: 800, letterSpacing: "-0.03em", lineHeight: 1.2, mt: "1.5em", mb: "0.25em" },
-    "& h2": { fontSize: "1.375rem", fontWeight: 700, letterSpacing: "-0.02em", lineHeight: 1.3, mt: "1.25em", mb: "0.25em" },
-    "& h3": { fontSize: "1.125rem", fontWeight: 700, letterSpacing: "-0.01em", mt: "1em", mb: "0.25em" },
-    "& pre": {
-      bgcolor: (t: { palette: { mode: string } }) => t.palette.mode === "dark" ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)",
-      borderRadius: "6px",
-      p: 2,
-      fontFamily: "'SF Mono', 'Fira Code', monospace",
-      fontSize: "0.85rem",
-      overflowX: "auto",
-      my: 1.5,
-      border: "1px solid",
-      borderColor: "divider",
-    },
-    "& code": {
-      fontFamily: "'SF Mono', 'Fira Code', monospace",
-      fontSize: "0.82em",
-      bgcolor: (t: { palette: { mode: string } }) => t.palette.mode === "dark" ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)",
-      borderRadius: "4px",
-      px: 0.625,
-      py: 0.125,
-    },
+    "& h1": { fontSize: "1.75rem", fontWeight: 800, letterSpacing: "-0.03em", lineHeight: 1.2, mt: "1.6em", mb: "0.3em" },
+    "& h2": { fontSize: "1.38rem", fontWeight: 700, letterSpacing: "-0.02em", lineHeight: 1.3, mt: "1.4em", mb: "0.3em" },
+    "& h3": { fontSize: "1.12rem", fontWeight: 700, letterSpacing: "-0.01em", mt: "1.15em", mb: "0.25em" },
     "& blockquote": {
       borderLeft: "3px solid",
-      borderColor: "primary.light",
+      borderColor: "primary.main",
       pl: 2.5,
       color: "text.secondary",
-      my: 1.5,
+      my: 2,
       ml: 0,
       fontStyle: "italic",
+      opacity: 0.85,
     },
-    "& ul, & ol": { pl: 2.5 },
+    "& ul, & ol": { pl: 3 },
     "& li + li": { mt: 0.375 },
-    "& p": { my: 0.625 },
+    "& p": { my: 0.75 },
     "& p:first-of-type": { mt: 0 },
   },
 };
@@ -126,15 +111,25 @@ const BLOCK_GROUPS: {
   },
 ];
 
-export function DocEditor({ content, readOnly, onContentSave, onAskAI }: DocEditorProps) {
+const lowlight = createLowlight(common);
+
+const LumenCodeBlock = CodeBlockLowlight.extend({
+  addNodeView() {
+    return ReactNodeViewRenderer(CodeBlock);
+  },
+});
+
+export function DocEditor({ content, readOnly, onContentSave, onContentChange, onAskAI }: DocEditorProps) {
   const editor = useEditor({
     extensions: [
-      StarterKit,
+      StarterKit.configure({ codeBlock: false }),
+      LumenCodeBlock.configure({ lowlight }),
       Placeholder.configure({ placeholder: "Start writing, or type '/' for commands…", showOnlyCurrent: true }),
     ],
     content,
     editable: !readOnly,
     immediatelyRender: false,
+    onUpdate: ({ editor: e }) => onContentChange?.(e.getHTML()),
     onBlur: ({ editor: e }) => onContentSave(e.getHTML()),
   });
 
@@ -154,11 +149,10 @@ export function DocEditor({ content, readOnly, onContentSave, onAskAI }: DocEdit
 
   return (
     <Box sx={editorSx}>
-      {/* Glassmorphic bubble menu — only mount once editor is ready */}
       {editor !== null && <BubbleMenu editor={editor}>
         <Paper
           elevation={0}
-          sx={{
+          sx={(theme) => ({
             display: "flex",
             p: 0.5,
             gap: 0.25,
@@ -166,29 +160,30 @@ export function DocEditor({ content, readOnly, onContentSave, onAskAI }: DocEdit
             border: "1px solid",
             borderColor: "divider",
             backdropFilter: "blur(16px)",
-            bgcolor: (t) =>
-              t.palette.mode === "dark" ? "rgba(28,28,28,0.88)" : "rgba(255,255,255,0.92)",
-            boxShadow: (t) =>
-              t.palette.mode === "dark"
-                ? "0 8px 32px rgba(0,0,0,0.5), 0 1px 0 rgba(255,255,255,0.04) inset"
-                : "0 4px 24px rgba(0,0,0,0.1), 0 1px 0 rgba(255,255,255,0.8) inset",
-          }}
+            bgcolor: "rgba(255,255,255,0.92)",
+            boxShadow: "0 4px 24px rgba(0,0,0,0.1), 0 1px 0 rgba(255,255,255,0.8) inset",
+            ...theme.applyStyles("dark", {
+              backgroundColor: "rgba(28,28,28,0.88)",
+              boxShadow: "0 8px 32px rgba(0,0,0,0.5), 0 1px 0 rgba(255,255,255,0.04) inset",
+            }),
+          })}
         >
           {FORMATS.map(({ Icon, mark, fn }) => (
             <IconButton
               key={mark}
               size="small"
               onClick={() => editor && fn(editor)}
-              sx={{
+              sx={(theme) => ({
                 p: 0.625,
                 borderRadius: "6px",
                 color: editor?.isActive(mark) ? "primary.main" : "text.secondary",
-                bgcolor: editor?.isActive(mark)
-                  ? (t) => t.palette.mode === "dark" ? "rgba(186,200,160,0.15)" : "rgba(163,176,135,0.12)"
-                  : "transparent",
+                bgcolor: editor?.isActive(mark) ? "rgba(163,176,135,0.12)" : "transparent",
                 "&:hover": { bgcolor: "action.hover" },
                 transition: "all 0.1s ease",
-              }}
+                ...theme.applyStyles("dark", {
+                  backgroundColor: editor?.isActive(mark) ? "rgba(186,200,160,0.15)" : "transparent",
+                }),
+              })}
             >
               <Icon sx={{ fontSize: 14 }} />
             </IconButton>
@@ -196,7 +191,6 @@ export function DocEditor({ content, readOnly, onContentSave, onAskAI }: DocEdit
         </Paper>
       </BubbleMenu>}
 
-      {/* Slash-command menu — only mount once editor is ready, only shows on '/' */}
       {!readOnly && editor !== null && (
         <FloatingMenu
           editor={editor}
@@ -209,20 +203,20 @@ export function DocEditor({ content, readOnly, onContentSave, onAskAI }: DocEdit
         >
           <Paper
             elevation={0}
-            sx={{
+            sx={(theme) => ({
               py: 1,
               minWidth: 230,
               borderRadius: "10px",
               border: "1px solid",
               borderColor: "divider",
               backdropFilter: "blur(16px)",
-              bgcolor: (t) =>
-                t.palette.mode === "dark" ? "rgba(28,28,28,0.92)" : "rgba(255,255,255,0.96)",
-              boxShadow: (t) =>
-                t.palette.mode === "dark"
-                  ? "0 12px 40px rgba(0,0,0,0.5)"
-                  : "0 8px 32px rgba(0,0,0,0.1)",
-            }}
+              bgcolor: "rgba(255,255,255,0.96)",
+              boxShadow: "0 8px 32px rgba(0,0,0,0.1)",
+              ...theme.applyStyles("dark", {
+                backgroundColor: "rgba(28,28,28,0.92)",
+                boxShadow: "0 12px 40px rgba(0,0,0,0.5)",
+              }),
+            })}
           >
             {BLOCK_GROUPS.map((group, gi) => (
               <Box key={group.label}>
