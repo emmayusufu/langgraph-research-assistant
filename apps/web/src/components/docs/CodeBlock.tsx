@@ -1,14 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import Box from "@mui/material/Box";
 import IconButton from "@mui/material/IconButton";
-import MenuItem from "@mui/material/MenuItem";
-import Select from "@mui/material/Select";
+import InputBase from "@mui/material/InputBase";
+import Popover from "@mui/material/Popover";
 import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
 import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
 import ContentCopyRoundedIcon from "@mui/icons-material/ContentCopyRounded";
+import KeyboardArrowDownRoundedIcon from "@mui/icons-material/KeyboardArrowDownRounded";
+import SearchRoundedIcon from "@mui/icons-material/SearchRounded";
 import { NodeViewContent, NodeViewWrapper } from "@tiptap/react";
 import type { NodeViewProps } from "@tiptap/react";
 
@@ -51,11 +53,34 @@ const labelFor = (lang: string) => LANGUAGE_LABELS[lang] ?? lang;
 
 export function CodeBlock({ node, updateAttributes, extension }: NodeViewProps) {
   const [copied, setCopied] = useState(false);
+  const [anchor, setAnchor] = useState<HTMLElement | null>(null);
+  const [query, setQuery] = useState("");
+  const triggerRef = useRef<HTMLButtonElement>(null);
 
   const lowlight = extension.options.lowlight;
   const supported: string[] = (lowlight?.listLanguages?.() ?? []) as string[];
-  const sorted = [...supported].sort((a, b) => labelFor(a).localeCompare(labelFor(b)));
+  const sorted = useMemo(
+    () => [...supported].sort((a, b) => labelFor(a).localeCompare(labelFor(b))),
+    [supported],
+  );
   const current: string = node.attrs.language ?? "";
+  const currentLabel = current ? labelFor(current) : "Auto";
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return sorted;
+    return sorted.filter((l) => labelFor(l).toLowerCase().includes(q) || l.toLowerCase().includes(q));
+  }, [sorted, query]);
+
+  const handleOpen = () => {
+    setQuery("");
+    setAnchor(triggerRef.current);
+  };
+
+  const handlePick = (lang: string | null) => {
+    updateAttributes({ language: lang });
+    setAnchor(null);
+  };
 
   const handleCopy = async () => {
     try {
@@ -71,87 +96,69 @@ export function CodeBlock({ node, updateAttributes, extension }: NodeViewProps) 
     <NodeViewWrapper as="div" className="lumen-codeblock">
       <Box
         contentEditable={false}
+        suppressContentEditableWarning
         sx={(theme) => ({
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          px: 1.25,
-          py: 0.5,
-          borderBottom: "1px solid #D0D7DE",
-          backgroundColor: "#EFF2F5",
-          borderTopLeftRadius: "8px",
-          borderTopRightRadius: "8px",
+          pl: 1.25,
+          pr: 0.75,
+          py: 0.625,
+          borderBottom: "1px solid",
+          borderColor: "rgba(139, 155, 110, 0.22)",
+          backgroundColor: "rgba(139, 155, 110, 0.08)",
           ...theme.applyStyles("dark", {
-            borderColor: "#30363D",
-            backgroundColor: "#161B22",
+            borderColor: "rgba(186, 200, 160, 0.2)",
+            backgroundColor: "rgba(186, 200, 160, 0.06)",
           }),
         })}
       >
-        <Select
-          value={sorted.includes(current) ? current : ""}
-          displayEmpty
-          variant="standard"
-          disableUnderline
-          onChange={(e) => updateAttributes({ language: e.target.value || null })}
+        <Box
+          component="button"
+          ref={triggerRef}
+          onClick={handleOpen}
+          type="button"
           sx={(theme) => ({
+            display: "flex",
+            alignItems: "center",
+            gap: 0.5,
+            px: 0.875,
+            py: 0.375,
+            border: "none",
+            borderRadius: "6px",
+            backgroundColor: "transparent",
+            cursor: "pointer",
             fontFamily: "'SF Mono', 'JetBrains Mono', 'Fira Code', Menlo, monospace",
             fontSize: "0.72rem",
-            fontWeight: 500,
-            color: "#57606A",
-            height: 24,
-            "& .MuiSelect-select": {
-              py: 0,
-              pl: 0.75,
-              pr: 2.5,
-              minHeight: "unset",
-              backgroundColor: "transparent",
+            fontWeight: 600,
+            letterSpacing: "-0.005em",
+            color: "text.secondary",
+            transition: "all 0.15s ease",
+            "&:hover": {
+              backgroundColor: "rgba(139, 155, 110, 0.14)",
+              color: "text.primary",
             },
-            "& .MuiSvgIcon-root": { color: "#57606A", right: 0, fontSize: 15 },
-            "&:hover": { color: "#1F2328" },
             ...theme.applyStyles("dark", {
-              color: "#8B949E",
-              "& .MuiSvgIcon-root": { color: "#8B949E" },
-              "&:hover": { color: "#E6EDF3" },
+              "&:hover": {
+                backgroundColor: "rgba(186, 200, 160, 0.12)",
+              },
             }),
           })}
-          MenuProps={{
-            slotProps: {
-              paper: {
-                sx: {
-                  maxHeight: 320,
-                  borderRadius: "8px",
-                  mt: 0.5,
-                  border: "1px solid",
-                  borderColor: "divider",
-                  boxShadow: "0 4px 16px rgba(0,0,0,0.08)",
-                },
-              },
-            },
-          }}
         >
-          <MenuItem value="" sx={{ fontSize: "0.78rem" }}>
-            <Typography sx={{ fontSize: "0.78rem", fontStyle: "italic", color: "text.secondary" }}>
-              Auto-detect
-            </Typography>
-          </MenuItem>
-          {sorted.map((lang) => (
-            <MenuItem key={lang} value={lang} sx={{ fontSize: "0.78rem" }}>
-              {labelFor(lang)}
-            </MenuItem>
-          ))}
-        </Select>
+          {currentLabel}
+          <KeyboardArrowDownRoundedIcon sx={{ fontSize: 14, opacity: 0.7 }} />
+        </Box>
         <Tooltip title={copied ? "Copied" : "Copy"}>
           <IconButton
             onClick={handleCopy}
             size="small"
             sx={(theme) => ({
-              width: 24,
-              height: 24,
-              color: "#57606A",
-              "&:hover": { backgroundColor: "rgba(175, 184, 193, 0.2)", color: "#1F2328" },
+              width: 26,
+              height: 26,
+              color: "text.secondary",
+              "&:hover": { backgroundColor: "rgba(139, 155, 110, 0.14)", color: "text.primary" },
               ...theme.applyStyles("dark", {
-                color: "#8B949E",
-                "&:hover": { backgroundColor: "rgba(177, 186, 196, 0.12)", color: "#E6EDF3" },
+                "&:hover": { backgroundColor: "rgba(186, 200, 160, 0.12)" },
               }),
             })}
           >
@@ -162,6 +169,110 @@ export function CodeBlock({ node, updateAttributes, extension }: NodeViewProps) 
       <pre>
         <NodeViewContent />
       </pre>
+      <Popover
+        open={Boolean(anchor)}
+        anchorEl={anchor}
+        onClose={() => setAnchor(null)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
+        transformOrigin={{ vertical: "top", horizontal: "left" }}
+        slotProps={{
+          paper: {
+            sx: {
+              mt: 0.5,
+              width: 240,
+              maxHeight: 340,
+              borderRadius: "10px",
+              border: "1px solid",
+              borderColor: "divider",
+              boxShadow: "0 12px 32px rgba(42, 37, 32, 0.12)",
+              overflow: "hidden",
+              display: "flex",
+              flexDirection: "column",
+            },
+          },
+        }}
+      >
+        <Box
+          sx={(theme) => ({
+            display: "flex",
+            alignItems: "center",
+            gap: 0.875,
+            px: 1.5,
+            py: 1.125,
+            borderBottom: "1px solid",
+            borderColor: "divider",
+            backgroundColor: "#FBF9F3",
+            ...theme.applyStyles("dark", {
+              backgroundColor: "rgba(255,255,255,0.02)",
+            }),
+          })}
+        >
+          <SearchRoundedIcon sx={{ fontSize: 14, color: "text.disabled" }} />
+          <InputBase
+            autoFocus
+            placeholder="Search language…"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            sx={{
+              flex: 1,
+              fontSize: "0.78rem",
+              "& input": { p: 0 },
+              "& input::placeholder": { color: "text.disabled", opacity: 1 },
+            }}
+          />
+        </Box>
+        <Box sx={{ overflowY: "auto", py: 0.5 }}>
+          <Box
+            onClick={() => handlePick(null)}
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              px: 1.5,
+              py: 0.75,
+              cursor: "pointer",
+              fontSize: "0.78rem",
+              fontStyle: "italic",
+              color: "text.secondary",
+              "&:hover": { backgroundColor: "rgba(139, 155, 110, 0.1)" },
+            }}
+          >
+            Auto-detect
+            {!current && <CheckRoundedIcon sx={{ fontSize: 13, color: "primary.main" }} />}
+          </Box>
+          {filtered.length === 0 ? (
+            <Typography sx={{ px: 1.5, py: 1.5, fontSize: "0.75rem", color: "text.disabled", textAlign: "center" }}>
+              No languages match
+            </Typography>
+          ) : (
+            filtered.map((lang) => {
+              const active = lang === current;
+              return (
+                <Box
+                  key={lang}
+                  onClick={() => handlePick(lang)}
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    px: 1.5,
+                    py: 0.75,
+                    cursor: "pointer",
+                    fontSize: "0.78rem",
+                    fontWeight: active ? 600 : 500,
+                    color: active ? "primary.main" : "text.primary",
+                    backgroundColor: active ? "rgba(139, 155, 110, 0.1)" : "transparent",
+                    "&:hover": { backgroundColor: "rgba(139, 155, 110, 0.14)" },
+                  }}
+                >
+                  {labelFor(lang)}
+                  {active && <CheckRoundedIcon sx={{ fontSize: 13 }} />}
+                </Box>
+              );
+            })
+          )}
+        </Box>
+      </Popover>
     </NodeViewWrapper>
   );
 }
