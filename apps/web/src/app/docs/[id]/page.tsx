@@ -206,9 +206,9 @@ export default function DocPage({ params }: Props) {
           <Box
             className="lumen-rise"
             sx={{
-              maxWidth: 720,
+              maxWidth: 760,
               mx: "auto",
-              px: { xs: 3, md: 9 },
+              px: { xs: 2, md: 4 },
               pt: { xs: 8, md: 14 },
               pb: 24,
               animationDelay: "0.2s",
