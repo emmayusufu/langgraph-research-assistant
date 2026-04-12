@@ -40,23 +40,15 @@ function formatDate(iso?: string) {
 export default function DocPage({ params }: Props) {
   const { id } = use(params);
   const router = useRouter();
-  const { doc, saveTitle, saveContent, addCollaborator, removeCollaborator, saveError, clearSaveError } = useDoc(id);
+  const { doc, isSaving, saveTitle, saveContent, addCollaborator, removeCollaborator, saveError, clearSaveError } = useDoc(id);
   const { docs, createDoc, refresh: refreshDocs } = useDocs();
   const [researchOpen, setResearchOpen] = useState(false);
   const [creating, setCreating] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const [savedPulse, setSavedPulse] = useState(false);
   const [liveContent, setLiveContent] = useState<string | null>(null);
   const titleRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { setMounted(true); }, []);
-
-  useEffect(() => {
-    if (!doc?.content) return;
-    setSavedPulse(true);
-    const t = setTimeout(() => setSavedPulse(false), 1200);
-    return () => clearTimeout(t);
-  }, [doc?.content]);
 
   const words = useMemo(
     () => wordCount(liveContent ?? doc?.content ?? ""),
@@ -151,13 +143,13 @@ export default function DocPage({ params }: Props) {
             />
             <Box sx={{ display: "flex", alignItems: "center", gap: 0.875, flexShrink: 0 }}>
               <Box
-                className={savedPulse ? "lumen-pulse" : ""}
+                className={isSaving ? "lumen-pulse" : ""}
                 sx={{
                   width: 6,
                   height: 6,
                   borderRadius: "50%",
-                  backgroundColor: savedPulse ? "secondary.main" : "primary.main",
-                  opacity: savedPulse ? 1 : 0.6,
+                  backgroundColor: isSaving ? "secondary.main" : "primary.main",
+                  opacity: isSaving ? 1 : 0.6,
                   transition: "background-color 0.3s",
                 }}
               />
@@ -169,7 +161,7 @@ export default function DocPage({ params }: Props) {
                   opacity: 0.75,
                 }}
               >
-                {savedPulse ? "Saving…" : "Saved"}
+                {isSaving ? "Saving…" : "Saved"}
               </Typography>
             </Box>
           </Box>

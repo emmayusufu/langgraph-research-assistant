@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useEditor, EditorContent, ReactNodeViewRenderer } from "@tiptap/react";
 import { BubbleMenu, FloatingMenu } from "@tiptap/react/menus";
 import StarterKit from "@tiptap/starter-kit";
@@ -120,6 +120,31 @@ const LumenCodeBlock = CodeBlockLowlight.extend({
 });
 
 export function DocEditor({ content, readOnly, onContentSave, onContentChange, onAskAI }: DocEditorProps) {
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastSaved = useRef<string>(content);
+
+  const flushSave = (html: string) => {
+    if (saveTimer.current) {
+      clearTimeout(saveTimer.current);
+      saveTimer.current = null;
+    }
+    if (html !== lastSaved.current) {
+      lastSaved.current = html;
+      onContentSave(html);
+    }
+  };
+
+  const scheduleSave = (html: string) => {
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(() => {
+      saveTimer.current = null;
+      if (html !== lastSaved.current) {
+        lastSaved.current = html;
+        onContentSave(html);
+      }
+    }, 800);
+  };
+
   const editor = useEditor({
     extensions: [
       StarterKit.configure({ codeBlock: false }),
@@ -129,9 +154,17 @@ export function DocEditor({ content, readOnly, onContentSave, onContentChange, o
     content,
     editable: !readOnly,
     immediatelyRender: false,
-    onUpdate: ({ editor: e }) => onContentChange?.(e.getHTML()),
-    onBlur: ({ editor: e }) => onContentSave(e.getHTML()),
+    onUpdate: ({ editor: e }) => {
+      const html = e.getHTML();
+      onContentChange?.(html);
+      scheduleSave(html);
+    },
+    onBlur: ({ editor: e }) => flushSave(e.getHTML()),
   });
+
+  useEffect(() => () => {
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+  }, []);
 
   useEffect(() => {
     if (!editor || editor.getHTML() === content) return;

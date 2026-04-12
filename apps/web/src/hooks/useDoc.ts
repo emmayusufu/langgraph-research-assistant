@@ -11,6 +11,7 @@ import {
 
 interface UseDocReturn {
   doc: DocDetail | null;
+  isSaving: boolean;
   saveTitle: (title: string) => Promise<void>;
   saveContent: (content: string) => Promise<void>;
   addCollaborator: (email: string, role: "editor" | "viewer") => Promise<void>;
@@ -21,6 +22,7 @@ interface UseDocReturn {
 
 export function useDoc(id: string): UseDocReturn {
   const [doc, setDoc] = useState<DocDetail | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -56,6 +58,7 @@ export function useDoc(id: string): UseDocReturn {
   const saveContent = useCallback(
     async (content: string) => {
       setSaveError(null);
+      setIsSaving(true);
       let prev: DocDetail | null = null;
       setDoc((d) => {
         prev = d;
@@ -66,6 +69,8 @@ export function useDoc(id: string): UseDocReturn {
       } catch {
         setDoc(prev);
         setSaveError("Failed to save");
+      } finally {
+        setIsSaving(false);
       }
     },
     [id],
@@ -100,5 +105,5 @@ export function useDoc(id: string): UseDocReturn {
 
   const clearSaveError = useCallback(() => setSaveError(null), []);
 
-  return { doc, saveTitle, saveContent, addCollaborator, removeCollaborator, saveError, clearSaveError };
+  return { doc, isSaving, saveTitle, saveContent, addCollaborator, removeCollaborator, saveError, clearSaveError };
 }
