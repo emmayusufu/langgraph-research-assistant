@@ -6,9 +6,9 @@ import IconButton from "@mui/material/IconButton";
 import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
-import ArticleOutlinedIcon from "@mui/icons-material/ArticleOutlined";
 import LogoutRoundedIcon from "@mui/icons-material/LogoutRounded";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 import type { Doc } from "@/lib/types";
 
 interface Props {
@@ -20,6 +20,8 @@ interface Props {
 
 export function DocSidebar({ docs, currentId, creating, onCreate }: Props) {
   const router = useRouter();
+  const user = useCurrentUser();
+  const firstName = user?.name?.split(" ")[0] ?? "";
 
   const handleSignOut = async () => {
     await fetch("/api/backend/api/v1/auth/logout", { method: "POST" });
@@ -28,85 +30,166 @@ export function DocSidebar({ docs, currentId, creating, onCreate }: Props) {
 
   return (
     <Box
-      sx={{
-        width: 240,
+      className="lumen-fade"
+      sx={(theme) => ({
+        width: 264,
         flexShrink: 0,
         display: "flex",
         flexDirection: "column",
-        bgcolor: (t) => t.palette.mode === "dark" ? "#1c1c1c" : "#EDEEE8",
-        borderRight: "1px solid",
-        borderColor: "divider",
+        backgroundColor: "#EEE8D8",
         height: "100vh",
-      }}
+        position: "relative",
+        ...theme.applyStyles("dark", {
+          backgroundColor: "#121006",
+        }),
+      })}
     >
-      {/* Wordmark */}
-      <Box sx={{ px: 2.5, pt: 2, pb: 1.5 }}>
+      <Box sx={{ px: 3.5, pt: 3.5, pb: 2 }}>
         <Typography
-          fontWeight={800}
-          fontSize="0.825rem"
-          letterSpacing="0.06em"
-          sx={{ color: "text.primary", textTransform: "uppercase" }}
+          sx={{
+            fontSize: "1.1rem",
+            fontWeight: 800,
+            letterSpacing: "-0.03em",
+            color: "text.primary",
+            lineHeight: 1,
+          }}
         >
           Lumen
         </Typography>
+        {firstName && (
+          <Typography
+            sx={{
+              mt: 0.5,
+              fontSize: "0.75rem",
+              fontWeight: 500,
+              color: "text.secondary",
+              opacity: 0.7,
+            }}
+          >
+            {firstName}&apos;s workspace
+          </Typography>
+        )}
       </Box>
 
-      {/* Doc list */}
-      <Box sx={{ flex: 1, overflow: "auto", px: 1, py: 0.5 }}>
-        {docs.map((d) => {
+      <Box
+        className="lumen-draw-line"
+        sx={{
+          mx: 3.5,
+          height: "1px",
+          backgroundColor: "divider",
+          mb: 2.5,
+          animationDelay: "0.15s",
+        }}
+      />
+
+      <Box
+        sx={{
+          px: 3.5,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          mb: 1.25,
+        }}
+      >
+        <Typography
+          sx={{
+            fontSize: "0.72rem",
+            fontWeight: 600,
+            color: "text.secondary",
+            opacity: 0.65,
+          }}
+        >
+          Pages
+        </Typography>
+        <Tooltip title="New page">
+          <IconButton
+            size="small"
+            onClick={!creating ? onCreate : undefined}
+            disabled={creating}
+            sx={{
+              width: 20,
+              height: 20,
+              color: "text.secondary",
+              opacity: 0.55,
+              transition: "all 0.2s",
+              "&:hover": { opacity: 1, color: "primary.main", transform: "rotate(90deg)" },
+            }}
+          >
+            <AddRoundedIcon sx={{ fontSize: 13 }} />
+          </IconButton>
+        </Tooltip>
+      </Box>
+
+      <Box sx={{ flex: 1, overflow: "auto", px: 1.5, py: 0.5 }}>
+        {docs.map((d, i) => {
           const active = d.id === currentId;
+          const num = String(i + 1).padStart(2, "0");
           return (
             <Box
               key={d.id}
+              className="lumen-rise"
               onClick={() => router.push(`/docs/${d.id}`)}
-              sx={{
+              sx={(theme) => ({
+                animationDelay: `${0.18 + i * 0.025}s`,
                 position: "relative",
                 display: "flex",
                 alignItems: "center",
-                gap: 1,
-                px: 1.5,
-                py: 0.625,
-                borderRadius: "6px",
+                gap: 1.25,
+                px: 2,
+                py: 1,
+                my: 0.25,
+                borderRadius: "4px",
                 cursor: "pointer",
-                transition: "background 0.1s ease",
-                bgcolor: active
-                  ? (t) => t.palette.mode === "dark" ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.06)"
-                  : "transparent",
+                transition: "all 0.22s cubic-bezier(0.2, 0.7, 0.3, 1)",
+                backgroundColor: active ? "rgba(139, 155, 110, 0.14)" : "transparent",
                 "&:hover": {
-                  bgcolor: active
-                    ? undefined
-                    : (t) => t.palette.mode === "dark" ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)",
+                  backgroundColor: active ? "rgba(139, 155, 110, 0.18)" : "rgba(42, 37, 32, 0.04)",
+                  transform: "translateX(2px)",
                 },
-              }}
+                ...theme.applyStyles("dark", {
+                  backgroundColor: active ? "rgba(186, 200, 160, 0.13)" : "transparent",
+                  "&:hover": {
+                    backgroundColor: active ? "rgba(186, 200, 160, 0.18)" : "rgba(235, 230, 217, 0.05)",
+                    transform: "translateX(2px)",
+                  },
+                }),
+              })}
             >
               {active && (
                 <Box
                   sx={{
                     position: "absolute",
                     left: 0,
-                    top: "18%",
-                    height: "64%",
+                    top: "20%",
+                    bottom: "20%",
                     width: "2px",
-                    bgcolor: "primary.main",
-                    borderRadius: "0 2px 2px 0",
+                    backgroundColor: "primary.main",
                   }}
                 />
               )}
-              <ArticleOutlinedIcon
+              <Typography
                 sx={{
-                  fontSize: 12,
+                  fontSize: "0.58rem",
+                  fontWeight: 700,
+                  letterSpacing: "0.08em",
                   color: active ? "primary.main" : "text.disabled",
+                  minWidth: 18,
                   flexShrink: 0,
-                  transition: "color 0.1s",
+                  fontVariantNumeric: "tabular-nums",
+                  opacity: 0.85,
                 }}
-              />
+              >
+                {num}
+              </Typography>
               <Typography
                 noWrap
                 sx={{
-                  fontSize: "0.8rem",
-                  fontWeight: active ? 600 : 400,
+                  fontSize: "0.82rem",
+                  fontWeight: active ? 600 : 500,
+                  letterSpacing: "-0.005em",
                   color: active ? "text.primary" : "text.secondary",
-                  transition: "color 0.1s",
+                  lineHeight: 1.3,
+                  flex: 1,
                 }}
               >
                 {d.title || "Untitled"}
@@ -115,57 +198,99 @@ export function DocSidebar({ docs, currentId, creating, onCreate }: Props) {
           );
         })}
 
-        {/* New page row — inside the list, like Notion */}
         <Box
           onClick={!creating ? onCreate : undefined}
-          sx={{
+          className="lumen-rise"
+          sx={(theme) => ({
+            animationDelay: `${0.18 + docs.length * 0.025}s`,
             display: "flex",
             alignItems: "center",
-            gap: 1,
-            px: 1.5,
-            py: 0.625,
-            mt: 0.5,
-            borderRadius: "6px",
+            gap: 1.25,
+            px: 2,
+            py: 1,
+            mt: 0.75,
+            borderRadius: "4px",
             cursor: creating ? "default" : "pointer",
-            opacity: creating ? 0.45 : 1,
-            transition: "all 0.1s ease",
+            opacity: creating ? 0.45 : 0.55,
+            transition: "all 0.2s",
             "&:hover": {
-              bgcolor: creating
-                ? undefined
-                : (t) => t.palette.mode === "dark" ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)",
+              opacity: creating ? 0.45 : 0.9,
+              backgroundColor: creating ? undefined : "rgba(42, 37, 32, 0.04)",
             },
-          }}
+            ...theme.applyStyles("dark", {
+              "&:hover": {
+                backgroundColor: creating ? undefined : "rgba(235, 230, 217, 0.05)",
+              },
+            }),
+          })}
         >
-          <AddRoundedIcon sx={{ fontSize: 12, color: "text.disabled", flexShrink: 0 }} />
-          <Typography sx={{ fontSize: "0.8rem", color: "text.disabled" }}>
+          <AddRoundedIcon
+            sx={{
+              fontSize: 14,
+              color: "text.disabled",
+              flexShrink: 0,
+              ml: "1px",
+            }}
+          />
+          <Typography
+            sx={{
+              fontSize: "0.82rem",
+              fontWeight: 500,
+              color: "text.disabled",
+            }}
+          >
             New page
           </Typography>
         </Box>
       </Box>
 
-      {/* Footer */}
       <Box
         sx={{
-          px: 1.5,
-          py: 1,
+          px: 3.5,
+          pt: 2,
+          pb: 2.5,
           borderTop: "1px solid",
           borderColor: "divider",
           display: "flex",
           alignItems: "center",
-          justifyContent: "flex-end",
-          gap: 0.25,
+          justifyContent: "space-between",
+          gap: 1,
         }}
       >
-        <ThemeToggle />
-        <Tooltip title="Sign out">
-          <IconButton
-            size="small"
-            onClick={handleSignOut}
-            sx={{ color: "text.disabled", "&:hover": { color: "text.primary" } }}
+        <Tooltip title={user?.email ?? ""} placement="top">
+          <Typography
+            noWrap
+            sx={{
+              fontSize: "0.72rem",
+              fontWeight: 600,
+              color: "text.secondary",
+              opacity: 0.7,
+              flex: 1,
+              minWidth: 0,
+            }}
           >
-            <LogoutRoundedIcon sx={{ fontSize: 14 }} />
-          </IconButton>
+            {user?.email ?? ""}
+          </Typography>
         </Tooltip>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 0.25, flexShrink: 0 }}>
+          <ThemeToggle />
+          <Tooltip title="Sign out">
+            <IconButton
+              size="small"
+              onClick={handleSignOut}
+              sx={{
+                width: 26,
+                height: 26,
+                color: "text.secondary",
+                opacity: 0.55,
+                transition: "all 0.2s",
+                "&:hover": { opacity: 1, color: "text.primary" },
+              }}
+            >
+              <LogoutRoundedIcon sx={{ fontSize: 13 }} />
+            </IconButton>
+          </Tooltip>
+        </Box>
       </Box>
     </Box>
   );

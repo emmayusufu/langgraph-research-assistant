@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, use, useEffect } from "react";
+import { useState, useRef, use, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Box from "@mui/material/Box";
 import CircularProgress from "@mui/material/CircularProgress";
@@ -20,6 +20,23 @@ interface Props {
   params: Promise<{ id: string }>;
 }
 
+function wordCount(html: string) {
+  return html.replace(/<[^>]*>/g, " ").trim().split(/\s+/).filter(Boolean).length;
+}
+
+function formatDate(iso?: string) {
+  if (!iso) return "";
+  try {
+    return new Date(iso).toLocaleDateString("en-GB", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+  } catch {
+    return "";
+  }
+}
+
 export default function DocPage({ params }: Props) {
   const { id } = use(params);
   const router = useRouter();
@@ -28,9 +45,24 @@ export default function DocPage({ params }: Props) {
   const [researchOpen, setResearchOpen] = useState(false);
   const [creating, setCreating] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [savedPulse, setSavedPulse] = useState(false);
+  const [liveContent, setLiveContent] = useState<string | null>(null);
   const titleRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { setMounted(true); }, []);
+
+  useEffect(() => {
+    if (!doc?.content) return;
+    setSavedPulse(true);
+    const t = setTimeout(() => setSavedPulse(false), 1200);
+    return () => clearTimeout(t);
+  }, [doc?.content]);
+
+  const words = useMemo(
+    () => wordCount(liveContent ?? doc?.content ?? ""),
+    [liveContent, doc?.content],
+  );
+  const readMins = words === 0 ? 0 : Math.max(1, Math.round(words / 220));
 
   const handleCreate = async () => {
     if (creating) return;
@@ -42,7 +74,7 @@ export default function DocPage({ params }: Props) {
 
   if (!doc) return mounted ? (
     <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}>
-      <CircularProgress size={24} thickness={2} />
+      <CircularProgress size={22} thickness={2} />
     </Box>
   ) : null;
 
@@ -52,46 +84,110 @@ export default function DocPage({ params }: Props) {
     <Box sx={{ display: "flex", height: "100vh", overflow: "hidden" }}>
       <DocSidebar docs={docs} currentId={id} creating={creating} onCreate={handleCreate} />
 
-      <Box sx={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", bgcolor: "background.paper" }}>
-        {/* Top bar */}
+      <Box
+        sx={(theme) => ({
+          flex: 1,
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
+          pt: { xs: 0.75, md: 1 },
+          pr: { xs: 0.75, md: 1 },
+          pb: { xs: 0.75, md: 1 },
+          pl: { xs: 1.5, md: 2.5 },
+          position: "relative",
+          backgroundColor: "#EEE8D8",
+          ...theme.applyStyles("dark", {
+            backgroundColor: "#121006",
+          }),
+        })}
+      >
         <Box
           sx={{
-            display: "grid",
-            gridTemplateColumns: "1fr auto 1fr",
-            alignItems: "center",
-            px: 3,
-            minHeight: 44,
-            borderBottom: "1px solid",
+            flex: 1,
+            display: "flex",
+            flexDirection: "column",
+            overflow: "hidden",
+            backgroundColor: "background.paper",
+            borderRadius: "14px",
+            border: "1px solid",
             borderColor: "divider",
-            flexShrink: 0,
           }}
         >
-          {/* Left — empty spacer */}
-          <Box />
+        <Box
+          className="lumen-fade"
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            px: 4,
+            py: 2,
+            flexShrink: 0,
+            gap: 3,
+            borderBottom: "1px solid",
+            borderColor: "divider",
+            animationDelay: "0.1s",
+          }}
+        >
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1.75, minWidth: 0, flex: 1 }}>
+            <Typography
+              sx={{
+                fontSize: "0.78rem",
+                fontWeight: 500,
+                color: "text.secondary",
+                textTransform: "capitalize",
+                opacity: 0.75,
+                flexShrink: 0,
+              }}
+            >
+              {doc.role}
+            </Typography>
+            <Box
+              sx={{
+                width: "1px",
+                height: 12,
+                backgroundColor: "divider",
+                flexShrink: 0,
+              }}
+            />
+            <Box sx={{ display: "flex", alignItems: "center", gap: 0.875, flexShrink: 0 }}>
+              <Box
+                className={savedPulse ? "lumen-pulse" : ""}
+                sx={{
+                  width: 6,
+                  height: 6,
+                  borderRadius: "50%",
+                  backgroundColor: savedPulse ? "secondary.main" : "primary.main",
+                  opacity: savedPulse ? 1 : 0.6,
+                  transition: "background-color 0.3s",
+                }}
+              />
+              <Typography
+                sx={{
+                  fontSize: "0.78rem",
+                  fontWeight: 500,
+                  color: "text.secondary",
+                  opacity: 0.75,
+                }}
+              >
+                {savedPulse ? "Saving…" : "Saved"}
+              </Typography>
+            </Box>
+          </Box>
 
-          {/* Center — current doc title */}
-          <Typography
-            noWrap
-            sx={{
-              fontSize: "0.78rem",
-              fontWeight: 500,
-              color: "text.disabled",
-              letterSpacing: "-0.01em",
-              maxWidth: 300,
-              textAlign: "center",
-            }}
-          >
-            {doc.title || "Untitled"}
-          </Typography>
-
-          {/* Right — actions */}
-          <Box sx={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 0.75 }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             {canEdit && (
               <Tooltip title="Ask AI  ⌘K">
                 <IconButton
                   size="small"
                   onClick={() => setResearchOpen(true)}
-                  sx={{ color: "text.disabled", "&:hover": { color: "primary.main" }, transition: "color 0.15s" }}
+                  sx={{
+                    width: 32,
+                    height: 32,
+                    color: "text.secondary",
+                    opacity: 0.7,
+                    transition: "all 0.2s",
+                    "&:hover": { opacity: 1, color: "primary.main", backgroundColor: "transparent" },
+                  }}
                 >
                   <AutoAwesomeRoundedIcon sx={{ fontSize: 15 }} />
                 </IconButton>
@@ -106,15 +202,66 @@ export default function DocPage({ params }: Props) {
           </Box>
         </Box>
 
-        {/* Content */}
-        <Box
-          sx={{
-            flex: 1,
-            overflow: "auto",
-            bgcolor: "background.paper",
-          }}
-        >
-          <Box sx={{ maxWidth: 720, mx: "auto", px: { xs: 3, md: 8 }, pt: 12, pb: 24 }}>
+        <Box sx={{ flex: 1, overflow: "auto", position: "relative" }}>
+          <Box
+            className="lumen-rise"
+            sx={{
+              maxWidth: 720,
+              mx: "auto",
+              px: { xs: 3, md: 9 },
+              pt: { xs: 8, md: 14 },
+              pb: 24,
+              animationDelay: "0.2s",
+            }}
+          >
+            <Box
+              className="lumen-fade"
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: 1.5,
+                mb: 3.5,
+                animationDelay: "0.25s",
+              }}
+            >
+              <Typography
+                sx={{
+                  fontSize: "0.82rem",
+                  fontWeight: 500,
+                  color: "text.secondary",
+                  opacity: 0.75,
+                }}
+              >
+                {formatDate(doc.updated_at)}
+              </Typography>
+              <Box sx={{ width: 3, height: 3, borderRadius: "50%", backgroundColor: "text.disabled", opacity: 0.5 }} />
+              <Typography
+                sx={{
+                  fontSize: "0.82rem",
+                  fontWeight: 500,
+                  color: "text.secondary",
+                  opacity: 0.75,
+                }}
+              >
+                {words.toLocaleString()} {words === 1 ? "word" : "words"}
+              </Typography>
+              {readMins > 0 && (
+                <>
+                  <Box sx={{ width: 3, height: 3, borderRadius: "50%", backgroundColor: "text.disabled", opacity: 0.5 }} />
+                  <Typography
+                    sx={{
+                      fontSize: "0.82rem",
+                      fontWeight: 500,
+                      color: "text.secondary",
+                      opacity: 0.75,
+                    }}
+                  >
+                    {readMins} min read
+                  </Typography>
+                </>
+              )}
+            </Box>
+
             <Box
               component="input"
               ref={titleRef}
@@ -129,27 +276,45 @@ export default function DocPage({ params }: Props) {
               sx={{
                 display: "block",
                 width: "100%",
-                fontSize: "2.25rem",
+                fontFamily: "inherit",
+                fontSize: { xs: "2.25rem", md: "2.85rem" },
                 fontWeight: 800,
-                letterSpacing: "-0.04em",
-                lineHeight: 1.15,
+                letterSpacing: "-0.035em",
+                lineHeight: 1.08,
                 border: "none",
                 outline: "none",
                 bgcolor: "transparent",
                 color: "text.primary",
-                fontFamily: "inherit",
-                mb: 1,
+                mb: 2.5,
                 p: 0,
-                "::placeholder": { color: "text.disabled" },
+                "::placeholder": {
+                  color: "text.disabled",
+                  opacity: 0.5,
+                },
               }}
             />
+
+            <Box
+              className="lumen-draw-line"
+              sx={{
+                width: 56,
+                height: "1.5px",
+                backgroundColor: "primary.main",
+                opacity: 0.7,
+                mb: 5,
+                animationDelay: "0.45s",
+              }}
+            />
+
             <DocEditor
               content={doc.content}
               readOnly={!canEdit}
               onContentSave={saveContent}
+              onContentChange={setLiveContent}
               onAskAI={canEdit ? () => setResearchOpen(true) : undefined}
             />
           </Box>
+        </Box>
         </Box>
       </Box>
 
