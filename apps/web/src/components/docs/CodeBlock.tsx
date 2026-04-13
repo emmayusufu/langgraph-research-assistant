@@ -19,9 +19,7 @@ const LANGUAGE_LABELS: Record<string, string> = {
   javascript: "JavaScript",
   typescript: "TypeScript",
   python: "Python",
-  "python-repl": "Python REPL",
   bash: "Bash",
-  shell: "Shell",
   go: "Go",
   rust: "Rust",
   java: "Java",
@@ -40,7 +38,6 @@ const LANGUAGE_LABELS: Record<string, string> = {
   markdown: "Markdown",
   sql: "SQL",
   php: "PHP",
-  "php-template": "PHP Template",
   ruby: "Ruby",
   r: "R",
   lua: "Lua",
@@ -55,6 +52,14 @@ const LANGUAGE_LABELS: Record<string, string> = {
   wasm: "WebAssembly",
 };
 
+const HIDDEN_LANGS = new Set(["shell", "python-repl", "php-template"]);
+
+const LANGUAGE_ALIAS: Record<string, string> = {
+  shell: "bash",
+  "python-repl": "python",
+  "php-template": "php",
+};
+
 const labelFor = (lang: string) =>
   LANGUAGE_LABELS[lang] ?? lang.charAt(0).toUpperCase() + lang.slice(1);
 
@@ -67,7 +72,10 @@ export function CodeBlock({ node, updateAttributes, extension }: NodeViewProps) 
   const lowlight = extension.options.lowlight;
   const supported: string[] = (lowlight?.listLanguages?.() ?? []) as string[];
   const sorted = useMemo(
-    () => [...supported].sort((a, b) => labelFor(a).localeCompare(labelFor(b))),
+    () =>
+      [...supported]
+        .filter((l) => !HIDDEN_LANGS.has(l))
+        .sort((a, b) => labelFor(a).localeCompare(labelFor(b))),
     [supported],
   );
   const current: string = node.attrs.language ?? "";
@@ -76,8 +84,10 @@ export function CodeBlock({ node, updateAttributes, extension }: NodeViewProps) 
     if (current || !node.textContent.trim()) return null;
     try {
       const result = lowlight?.highlightAuto?.(node.textContent);
-      const lang = result?.data?.language as string | undefined;
-      return lang && supported.includes(lang) ? lang : null;
+      const raw = result?.data?.language as string | undefined;
+      if (!raw) return null;
+      const mapped = LANGUAGE_ALIAS[raw] ?? raw;
+      return supported.includes(mapped) && !HIDDEN_LANGS.has(mapped) ? mapped : null;
     } catch {
       return null;
     }

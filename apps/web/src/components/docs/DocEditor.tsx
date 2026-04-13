@@ -111,7 +111,11 @@ const BLOCK_GROUPS: {
   },
 ];
 
-const lowlight = createLowlight(common);
+const customCommon = { ...common };
+delete (customCommon as Record<string, unknown>).shell;
+delete (customCommon as Record<string, unknown>)["python-repl"];
+delete (customCommon as Record<string, unknown>)["php-template"];
+const lowlight = createLowlight(customCommon as typeof common);
 
 const LumenCodeBlock = CodeBlockLowlight.extend({
   addNodeView() {
