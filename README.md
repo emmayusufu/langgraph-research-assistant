@@ -1,293 +1,256 @@
 # Lumen
 
-A quiet workspace for thinking, researching, and writing well. Lumen is a rich-text document editor with two distinct AI systems baked in: **inline AI** for one-shot rewrites and continuations (Notion-style), and a **research panel** that runs a multi-agent web research pipeline without leaving the doc.
+A document editor with two AI systems wired in: inline rewrites and generation in the bubble/slash menu, and a separate research panel that goes to the web and returns a cited answer.
 
 ## Features
 
-- **Rich-text editor** — Tiptap v3 with headings, lists, quotes, and GitHub-style code blocks with ~35 languages, language picker, copy button, and auto-detection
-- **Inline AI** — select text and the bubble menu shows an Ask AI button, or type `/` and pick Ask AI from the slash menu. Streams rewrites (Improve / Shorter / Longer / Fix grammar / Change tone / Summarize) and generations (Continue writing / Write outline) in real time with Replace / Insert below / Try again / Discard
-- **Research panel** — a separate `⌘K` drawer that runs a four-agent LangGraph supervisor pipeline (planner → researcher → optional coder → writer) across web search + GitHub, producing a markdown response with inline citations
-- **Live metadata** — word count, read time, and save indicator update as you type, all pulled from real editor state
-- **Collaboration** — share docs with other workspace members as editor or viewer, enforced by an OPA Rego policy
-- **Custom auth** — email/password signup with bcrypt + JWT session cookies, no external OIDC dependency
-- **Dark mode** — fully supported via MUI's CSS-variables-based `CssVarsProvider`, no flicker on navigation
-- **Markdown rendering** — AI output containing `##` headings, `**bold**`, bullet lists, and inline `code` is parsed by `marked`, sanitized by DOMPurify, and inserted as real ProseMirror nodes
+Rich-text editor with headings, lists, quotes, and code blocks (40+ languages, GitHub syntax colors, a searchable language picker, and a copy button).
+
+Inline AI. Select text, click AI in the bubble menu, pick Improve / Shorter / Longer / Grammar / Tone / Summarize, or type a custom instruction. Or on an empty line type `/` and pick Ask AI to Continue writing or Write outline. Responses stream and you can Replace, Insert below, Try again, or Discard.
+
+Research panel. A drawer you open with the sparkle button or `⌘K`. It runs a four-agent LangGraph pipeline (planner, researcher, coder, writer) over DuckDuckGo and GitHub and returns markdown with inline citations.
+
+Collaboration. Share docs with people in your workspace as editor or viewer. Access is enforced by an OPA Rego policy.
+
+Auth. Email and password, bcrypt, JWT session cookie. No external OIDC provider.
+
+Everything works in dark mode.
 
 ## Architecture
 
-Lumen runs as a Turborepo monorepo with a Python backend and a Next.js frontend, backed by PostgreSQL and an OPA policy engine.
+```mermaid
+flowchart TB
+    Browser["Browser<br/>Next.js · React · MUI · Tiptap"]
+    API["FastAPI :8742"]
+    Auth["Auth + CRUD<br/>docs · users · collaborators"]
+    Inline["Inline AI<br/>writer → editor"]
+    Research["Research Pipeline<br/>planner → researcher → coder → writer"]
+    DB[("PostgreSQL<br/>docs · users · sessions")]
+    OPA{{"OPA Rego<br/>authz"}}
+    LLM(["DeepSeek LLM"])
+    Web(["DuckDuckGo · GitHub"])
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                           Browser                                │
-│  Next.js 16 (App Router) · React 19 · Material UI 7 · Tiptap v3 │
-└─────────────────┬───────────────────────────────────────────────┘
-                  │ HTTP + SSE
-┌─────────────────▼───────────────────────────────────────────────┐
-│                    FastAPI (port 8742)                          │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────┐   │
-│  │  Auth + CRUD │  │  Inline AI   │  │   Research Pipeline  │   │
-│  │ docs, users, │  │  writer →    │  │ planner → researcher │   │
-│  │ collabs, …   │  │  editor      │  │  → coder → writer    │   │
-│  └──────┬───────┘  └──────┬───────┘  └──────────┬───────────┘   │
-│         │                 │                     │               │
-│         └────────┬────────┴─────────────────────┘               │
-│                  │                                              │
-│  ┌───────────────▼────┐       ┌───────────────┐                 │
-│  │  PostgreSQL (docs, │       │  OPA Rego     │                 │
-│  │  users, sessions)  │       │  (authz only) │                 │
-│  └────────────────────┘       └───────────────┘                 │
-└─────────────────────────────────────────────────────────────────┘
-```
+    Browser <-->|HTTP + SSE| API
+    API --> Auth
+    API --> Inline
+    API --> Research
+    Auth --> DB
+    Auth -. check .-> OPA
+    Inline --> LLM
+    Research --> LLM
+    Research --> Web
 
-### The two AI systems
-
-They share the DeepSeek LLM client and nothing else. They're optimized for different latencies and jobs:
-
-| | **Inline AI** | **Research panel** |
-|---|---|---|
-| Graph | writer → (editor) | planner → researcher → (coder) → writer |
-| Latency target | <2s | 10-30s |
-| Web tools | No | Yes (DuckDuckGo + GitHub) |
-| Input | Selection or cursor + context | Free-form question |
-| Output | Replacement string, streamed | Markdown report with citations |
-| Endpoint | `POST /api/v1/ai/inline` | `POST /api/v1/research/stream` |
-| State | Transient, in-memory | Persisted as a session |
-
-### Inline AI multi-agent pipeline
-
-```
-state → writer ─► (conditional) ─► editor ─► done
-        (stream tokens live)      (quality-check, optional)
+    classDef client fill:#EEE8D8,stroke:#8B9B6E,stroke-width:2px,color:#2A2520
+    classDef server fill:#FAF8F3,stroke:#5E6B47,stroke-width:2px,color:#2A2520
+    classDef agent fill:#D5DDBF,stroke:#5E6B47,stroke-width:1.5px,color:#2A2520
+    classDef store fill:#F1ECDF,stroke:#6B6358,stroke-width:1.5px,color:#2A2520
+    classDef external fill:#E6DFD0,stroke:#6B6358,stroke-width:1.5px,color:#2A2520
+    class Browser client
+    class API server
+    class Auth,Inline,Research agent
+    class DB,OPA store
+    class LLM,Web external
 ```
 
-- **Writer** — streams tokens from DeepSeek using an action-specific system prompt
-- **Editor** — runs for `improve / shorter / longer / tone / summarize / custom`, skips for `grammar / continue / outline`. Checks grammar, tone adherence, meaning preservation, and length sanity. Returns a JSON verdict `{ok, issues, revised}` and emits a `revision` event only if anything changed
-- **Extensibility** — v2 can add a fact-checker node with a single conditional edge on the graph
+Inline AI and the research pipeline share the DeepSeek client and nothing else. Inline AI is a two-node graph optimised for sub-two-second latency and runs without web tools. The research pipeline is a four-agent supervisor graph that takes ten to thirty seconds and pulls in sources from the web.
 
-### Research supervisor pipeline
+### Inline AI
 
+```mermaid
+flowchart LR
+    Req([Request]) --> Writer["writer<br/>stream tokens"]
+    Writer -->|"improve · shorter · longer<br/>tone · summarize · custom"| Editor["editor<br/>quality check"]
+    Writer -->|"grammar · continue · outline"| Done([done])
+    Editor --> Done
+
+    classDef node fill:#D5DDBF,stroke:#5E6B47,stroke-width:1.5px,color:#2A2520
+    class Writer,Editor node
 ```
-START → supervisor → planner → supervisor → researcher → supervisor → [coder] → supervisor → writer → END
+
+The writer streams tokens from DeepSeek using an action-specific prompt. For actions where quality control matters (improve, shorter, longer, tone, summarize, custom), an editor node runs after with its own LLM call, returns a JSON verdict, and emits a revision event only if it actually changed anything. Grammar, continue, and outline skip the editor because a second pass adds no value.
+
+Adding a fact-checker later is one conditional edge on the graph.
+
+### Research pipeline
+
+```mermaid
+flowchart LR
+    Query([Query]) --> Supervisor{"supervisor"}
+    Supervisor --> Planner[planner]
+    Planner --> Supervisor
+    Supervisor --> Researcher[researcher]
+    Researcher --> Supervisor
+    Supervisor -->|code query| Coder[coder]
+    Coder --> Supervisor
+    Supervisor --> Writer[writer]
+    Writer --> Done([Answer])
+
+    classDef node fill:#D5DDBF,stroke:#5E6B47,stroke-width:1.5px,color:#2A2520
+    classDef decision fill:#F1ECDF,stroke:#6B6358,stroke-width:1.5px,color:#2A2520
+    class Planner,Researcher,Coder,Writer node
+    class Supervisor decision
 ```
 
-The supervisor reads shared state (including `completed_agents`) and routes to the next node deterministically — no LLM calls wasted on routing. Retries the researcher once if results are thin; skips the coder for non-code queries.
+The supervisor reads shared state and routes to the next node deterministically. It skips the coder for non-code queries, retries the researcher if results are thin, and never calls an LLM to decide what to do next.
 
-## Quick Start
+## Running it
 
-### Prerequisites
-
-- Docker and Docker Compose
-- DeepSeek API key (from [platform.deepseek.com](https://platform.deepseek.com))
-- GitHub token (optional, raises code search rate limit from 60 → 5000 req/hr)
-
-### First-time setup
+You need Docker, a DeepSeek API key, and optionally a GitHub token (raises the code search rate limit from 60 to 5000 per hour).
 
 ```bash
 cp .env.example .env
-# Fill in DEEPSEEK_API_KEY, POSTGRES_PASSWORD, and SECRET_KEY
+# set DEEPSEEK_API_KEY, POSTGRES_PASSWORD, SECRET_KEY
 docker compose up --build
 ```
 
-The app is available at **http://localhost:3847**. Create an account at `/signup` or log in at `/login`.
+Open http://localhost:3847 and sign up.
 
-### Environment variables
+### Environment
 
-| Variable | Description | Required |
-|---|---|---|
-| `DEEPSEEK_API_KEY` | DeepSeek API key | Yes |
-| `DEEPSEEK_BASE_URL` | DeepSeek API base URL | No (default: `https://api.deepseek.com`) |
-| `DEEPSEEK_MODEL` | Model name | No (default: `deepseek-chat`) |
-| `GITHUB_TOKEN` | GitHub token for code search | No |
-| `SECRET_KEY` | JWT signing secret (generate with `openssl rand -base64 32`) | Yes |
-| `POSTGRES_PASSWORD` | PostgreSQL password | Yes |
-| `DATABASE_URL` | Postgres connection string | Yes |
+```
+DEEPSEEK_API_KEY       your DeepSeek key
+DEEPSEEK_BASE_URL      https://api.deepseek.com
+DEEPSEEK_MODEL         deepseek-chat
+GITHUB_TOKEN           optional
+SECRET_KEY             openssl rand -base64 32
+POSTGRES_PASSWORD      anything
+DATABASE_URL           postgresql://postgres:<pw>@postgres:5432/app
+```
 
 ### Ports
 
-| Service | Port |
-|---|---|
-| Frontend (Next.js) | 3847 |
-| Backend (FastAPI) | 8742 |
-| PostgreSQL | 5434 |
-| OPA | 8181 |
+Frontend on 3847, backend on 8742, Postgres on 5434, OPA on 8181.
 
-### Run locally without Docker
+### Without Docker
 
-**Backend:**
 ```bash
 cd apps/backend
-python -m venv .venv
-source .venv/bin/activate
+python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 ENV_FILE=../../.env uvicorn app.main:app --reload --port 8742
 ```
 
-**Frontend:**
 ```bash
 cd apps/web
 npm install
 npm run dev
 ```
 
-**Both via Turborepo:**
-```bash
-npm install
-npm run dev
-```
+Or from the root with Turborepo: `npm install && npm run dev`.
 
-### Tests
+### Tests and lint
 
 ```bash
-cd apps/backend
-source .venv/bin/activate
-pytest -v
-```
-
-Frontend has a TypeScript strict mode check:
-
-```bash
-cd apps/web
-npm run build
-```
-
-### Lint & format
-
-```bash
+cd apps/backend && pytest -v
 cd apps/backend && ruff check . && ruff format .
 cd apps/web && npm run lint
+cd apps/web && npm run build
 ```
 
 ## API
 
-All endpoints live under `/api/v1/`. Authenticated routes require a session cookie set by `/api/v1/auth/login`.
+Everything lives under `/api/v1/`. Auth is a session cookie set by the login endpoint.
 
-| Endpoint | Method | Description |
-|---|---|---|
-| `/api/v1/auth/signup` | POST | Create workspace + user |
-| `/api/v1/auth/login` | POST | Email/password login, sets session cookie |
-| `/api/v1/auth/logout` | POST | Revoke session |
-| `/api/v1/auth/me` | GET | Current user |
-| `/api/v1/ai/inline` | POST | Inline AI SSE stream (writer + editor) |
-| `/api/v1/research` | POST | Research, returns JSON |
-| `/api/v1/research/stream` | POST | Research, streams SSE events per agent |
-| `/api/v1/sessions` | GET | List research sessions |
-| `/api/v1/sessions/:id` | GET / DELETE | Get or delete a session |
-| `/api/v1/content/docs` | GET / POST | List or create docs |
-| `/api/v1/content/docs/:id` | GET / PATCH / DELETE | Get, update, or delete a doc |
-| `/api/v1/content/docs/:id/collaborators` | GET / POST | List or add collaborators |
-| `/api/v1/content/docs/:id/collaborators/:userId` | DELETE | Remove a collaborator |
-| `/api/v1/users/search?email=` | GET | Look up a user by email |
+```
+POST   /api/v1/auth/signup
+POST   /api/v1/auth/login
+POST   /api/v1/auth/logout
+GET    /api/v1/auth/me
 
-### Inline AI request shape
+POST   /api/v1/ai/inline               SSE stream (writer + editor)
+
+POST   /api/v1/research                JSON response
+POST   /api/v1/research/stream         SSE stream per agent
+
+GET    /api/v1/sessions
+GET    /api/v1/sessions/:id
+DELETE /api/v1/sessions/:id
+
+GET    /api/v1/content/docs
+POST   /api/v1/content/docs
+GET    /api/v1/content/docs/:id
+PATCH  /api/v1/content/docs/:id
+DELETE /api/v1/content/docs/:id
+GET    /api/v1/content/docs/:id/collaborators
+POST   /api/v1/content/docs/:id/collaborators
+DELETE /api/v1/content/docs/:id/collaborators/:userId
+
+GET    /api/v1/users/search?email=
+```
+
+Inline AI request body:
 
 ```json
 {
-  "action": "improve" | "shorter" | "longer" | "grammar" | "tone" | "summarize" | "continue" | "outline" | "custom",
-  "tone": "casual",              // required when action == "tone"
-  "prompt": "make this sassier", // required when action == "custom"
+  "action": "improve",
+  "tone": "casual",
+  "prompt": "make this sassier",
   "selection": "the highlighted text",
   "context": "surrounding paragraphs",
-  "topic": "outline topic"       // required when action == "outline"
+  "topic": "outline topic"
 }
 ```
 
-SSE event stream: `status` → `token` (repeated) → `draft_complete` → `status (refining)` → `revision` (if editor changes anything) → `done`.
+`action` is one of `improve`, `shorter`, `longer`, `grammar`, `tone`, `summarize`, `continue`, `outline`, `custom`. The other fields are conditional on the action. The SSE stream emits `status`, then repeated `token`, then `draft_complete`, then (if the editor pass ran) `status` and optionally `revision`, then `done`.
 
-## Project Structure
+## Layout
 
 ```
-├── apps/
-│   ├── backend/
-│   │   ├── app/
-│   │   │   ├── agents/
-│   │   │   │   ├── inline/            # Inline AI: writer, editor, graph, prompts, state
-│   │   │   │   ├── planner.py         # Research supervisor agents
-│   │   │   │   ├── researcher.py
-│   │   │   │   ├── coder.py
-│   │   │   │   ├── writer.py
-│   │   │   │   └── supervisor.py
-│   │   │   ├── db/                    # asyncpg: docs, users, sessions
-│   │   │   ├── middleware/            # auth (session cookie + JWT), OPA client
-│   │   │   ├── migrations/            # init.sql
-│   │   │   ├── models/                # User dataclass
-│   │   │   ├── routers/               # ai, auth, docs, sessions, users
-│   │   │   ├── tools/                 # web_search, doc_reader, github_search
-│   │   │   ├── graph.py               # Research supervisor graph
-│   │   │   └── main.py                # FastAPI app
-│   │   └── tests/                     # pytest suite
-│   └── web/
-│       └── src/
-│           ├── app/
-│           │   ├── (auth)/            # login, signup pages
-│           │   ├── api/backend/       # proxy route to FastAPI
-│           │   ├── docs/[id]/         # editor page
-│           │   ├── layout.tsx
-│           │   ├── providers.tsx      # CssVarsProvider, emotion cache
-│           │   └── globals.css        # scrollbar, autofill, syntax highlighting
-│           ├── components/
-│           │   ├── docs/
-│           │   │   ├── ai/            # AIPanel, PresetList, PromptInput,
-│           │   │   │                  # ToneSubmenu, StreamingPreview, PreviewActions
-│           │   │   ├── CodeBlock.tsx  # React NodeView with language picker
-│           │   │   ├── DocEditor.tsx  # Tiptap + bubble/slash menus + AI wiring
-│           │   │   ├── DocSidebar.tsx
-│           │   │   ├── DocResearchPanel.tsx
-│           │   │   ├── CollaboratorList.tsx
-│           │   │   └── ShareButton.tsx
-│           │   ├── chat/              # ChatInput, MessageBubble, MessageList
-│           │   ├── layout/            # Header, ThemeToggle
-│           │   └── shared/            # FormInput, FormSelect
-│           ├── hooks/                 # useInlineAI, useChat, useDoc, useDocs,
-│           │                          # useCurrentUser, useSessions
-│           └── lib/
-│               ├── api.ts             # streamInlineAI, streamResearch, CRUD
-│               ├── editor-context.ts  # cursor/selection context extraction
-│               ├── markdown.ts        # marked + DOMPurify pipeline
-│               └── types.ts
-├── policies/                          # OPA Rego (authz + revocation)
-├── docker-compose.yml
-└── .env.example
+apps/
+  backend/
+    app/
+      agents/
+        inline/          writer, editor, graph, prompts, state, llm_client
+        planner.py
+        researcher.py
+        coder.py
+        writer.py
+        supervisor.py
+      db/                asyncpg layer
+      middleware/        auth, opa
+      migrations/
+      models/
+      routers/           ai, auth, docs, sessions, users
+      tools/             web_search, doc_reader, github_search
+      graph.py           research supervisor graph
+      main.py
+    tests/
+  web/
+    src/
+      app/
+        (auth)/          login, signup
+        api/backend/     proxy to FastAPI
+        docs/[id]/       editor page
+        layout.tsx
+        providers.tsx
+        globals.css
+      components/
+        docs/
+          ai/            AIPanel, PresetList, PromptInput,
+                         ToneSubmenu, StreamingPreview, PreviewActions
+          CodeBlock.tsx
+          DocEditor.tsx
+          DocSidebar.tsx
+          DocResearchPanel.tsx
+          CollaboratorList.tsx
+          ShareButton.tsx
+        chat/            ChatInput, MessageBubble, MessageList
+        layout/          Header, ThemeToggle
+        shared/          FormInput, FormSelect
+      hooks/             useInlineAI, useChat, useDoc, useDocs,
+                         useCurrentUser, useSessions
+      lib/
+        api.ts
+        editor-context.ts
+        markdown.ts
+        types.ts
+policies/                OPA Rego
+docker-compose.yml
 ```
 
-## Tech Stack
+## Stack
 
-| Layer | Technology |
-|---|---|
-| LLM | DeepSeek (OpenAI-compatible API) |
-| Agent orchestration | LangGraph (supervisor pattern for research, custom graph for inline) |
-| Backend | Python 3.11+, FastAPI, asyncpg, SSE streaming |
-| Frontend | Next.js 16 (App Router), React 19, Material UI 7 (`CssVarsProvider`), TypeScript strict |
-| Editor | Tiptap v3 (StarterKit, Placeholder, CodeBlockLowlight, React NodeView) |
-| Syntax highlighting | lowlight + highlight.js common pack, GitHub Primer color palette |
-| Markdown | marked + DOMPurify |
-| Auth | Custom email/password with bcrypt + JWT session cookie |
-| Authorization | Open Policy Agent (Rego) |
-| Database | PostgreSQL |
-| Web search | DuckDuckGo (no API key) |
-| Code search | GitHub REST API |
-| Monorepo | Turborepo |
-| Containers | Docker, Docker Compose |
-
-## How to use the inline AI
-
-### On selected text
-
-1. Highlight any text in the editor
-2. The bubble menu appears above the selection with an **AI** button on the left
-3. Click it — the panel opens anchored to the selection
-4. Pick a preset (Improve writing, Make shorter, Make longer, Fix grammar, Change tone → submenu, Summarize) or type a custom instruction in the input at the bottom
-5. Watch tokens stream into the preview
-6. **Replace** swaps the selection with the AI output; **Insert below** appends it as a new block; **Try again** re-runs the same request; **Discard** closes the panel
-
-### On a blank line
-
-1. Type `/` on an empty line to open the slash menu
-2. Pick **Ask AI** from the top group
-3. Choose **Continue writing** (uses the surrounding text as context to extend what you were writing) or **Write outline** (structured markdown outline with H2s and bullets) or type a custom prompt
-4. **Accept** inserts the output at the cursor
-
-Markdown in AI output is automatically parsed into real editor nodes — headings become `<h2>`, bullet lists become real list items, `**bold**` and `` `code` `` become proper marks.
+DeepSeek for the LLM calls, LangGraph for agent orchestration, FastAPI with asyncpg and SSE streaming on the backend, Next.js 16 App Router with React 19 and Material UI 7 on the frontend, Tiptap v3 for the editor, lowlight with highlight.js for syntax colors, marked and DOMPurify for the markdown-to-ProseMirror pipeline, PostgreSQL, OPA for authorization, Turborepo, Docker.
 
 ## License
 
