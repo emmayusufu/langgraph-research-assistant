@@ -25,6 +25,7 @@ import FormatStrikethroughIcon from "@mui/icons-material/FormatStrikethrough";
 import NotesRoundedIcon from "@mui/icons-material/NotesRounded";
 import type { Editor } from "@tiptap/react";
 import { extractCursorContext, extractSelectionContext } from "@/lib/editor-context";
+import { looksLikeMarkdown, markdownToHtml } from "@/lib/markdown";
 
 interface DocEditorProps {
   content: string;
@@ -234,6 +235,10 @@ export function DocEditor({ content, readOnly, onContentSave, onContentChange, o
     setAiOpen(true);
   };
 
+  const toInsertable = (text: string): string => {
+    return looksLikeMarkdown(text) ? markdownToHtml(text) : text;
+  };
+
   const handleAIReplace = (text: string) => {
     if (!editor || !aiRange) return;
     editor
@@ -241,7 +246,7 @@ export function DocEditor({ content, readOnly, onContentSave, onContentChange, o
       .focus()
       .setTextSelection({ from: aiRange.from, to: aiRange.to })
       .deleteSelection()
-      .insertContent(text)
+      .insertContent(toInsertable(text))
       .run();
   };
 
@@ -252,7 +257,7 @@ export function DocEditor({ content, readOnly, onContentSave, onContentChange, o
       .focus()
       .setTextSelection(aiRange.to)
       .insertContent({ type: "paragraph" })
-      .insertContent(text)
+      .insertContent(toInsertable(text))
       .run();
   };
 
