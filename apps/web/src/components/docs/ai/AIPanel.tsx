@@ -14,8 +14,8 @@ import { useInlineAI } from "@/hooks/useInlineAI";
 import type { InlineAIRequest, InlineTone } from "@/lib/api";
 
 interface VirtualAnchor {
+  nodeType: 1;
   getBoundingClientRect: () => DOMRect;
-  nodeType?: number;
 }
 
 interface Props {
