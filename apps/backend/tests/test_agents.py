@@ -9,10 +9,15 @@ from app.agents.writer import writer_node
 from app.state import ResearchState
 
 
+def _mock_llm(content: str):
+    llm = MagicMock()
+    llm.invoke = MagicMock(return_value=AIMessage(content=content))
+    return llm
+
+
 def test_planner_produces_sub_tasks():
-    mock_llm = MagicMock()
-    mock_llm.invoke.return_value = AIMessage(
-        content="1. Search FastAPI WebSocket docs\n2. Find WebSocket code examples\n3. Compare WebSocket vs SSE"
+    llm = _mock_llm(
+        "1. Search FastAPI WebSocket docs\n2. Find WebSocket code examples\n3. Compare WebSocket vs SSE"
     )
 
     state: ResearchState = {
@@ -26,8 +31,7 @@ def test_planner_produces_sub_tasks():
         "next_agent": "",
     }
 
-    with patch("app.agents.planner.llm", mock_llm):
-        result = planner_node(state)
+    result = planner_node(state, llm)
 
     assert "sub_tasks" in result
     assert len(result["sub_tasks"]) > 0
@@ -95,10 +99,7 @@ def test_coder_produces_code_results():
 
 
 def test_writer_produces_output():
-    mock_llm = MagicMock()
-    mock_llm.invoke.return_value = AIMessage(
-        content="FastAPI supports WebSockets natively [1](https://fastapi.tiangolo.com)."
-    )
+    llm = _mock_llm("FastAPI supports WebSockets natively [1](https://fastapi.tiangolo.com).")
 
     state: ResearchState = {
         "query": "How does FastAPI handle WebSockets?",
@@ -125,8 +126,7 @@ def test_writer_produces_output():
         "next_agent": "",
     }
 
-    with patch("app.agents.writer.llm", mock_llm):
-        result = writer_node(state)
+    result = writer_node(state, llm)
 
     assert "output" in result
     assert len(result["output"]) > 0

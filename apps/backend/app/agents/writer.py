@@ -1,15 +1,6 @@
 import json
 
 from langchain_core.messages import AIMessage, SystemMessage
-from langchain_openai import ChatOpenAI
-
-from app.config import settings
-
-llm = ChatOpenAI(
-    model=settings.deepseek_model,
-    api_key=settings.deepseek_api_key,
-    base_url=settings.deepseek_base_url,
-)
 
 CHAT_PROMPT = """You are a technical writing assistant. Given research results and code examples, write a clear, conversational answer with inline citations.
 
@@ -22,7 +13,7 @@ Code examples:
 {code_results}"""
 
 
-def writer_node(state: dict) -> dict:
+def writer_node(state: dict, llm) -> dict:
     research_json = json.dumps(state["research_results"][:10], indent=2)
     code_json = json.dumps(state["code_results"][:10], indent=2)
 
