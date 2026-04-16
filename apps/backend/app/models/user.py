@@ -7,3 +7,4 @@ class User:
     org_id: str
     email: str
     name: str = field(default="")
+    is_admin: bool = field(default=False)

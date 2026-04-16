@@ -17,13 +17,16 @@ async def attach_user(request: Request, call_next: Callable) -> Response:
     if token:
         try:
             payload = decode_token(token)
-            if not await _is_revoked(payload["jti"]) and await users_db.get_user_by_id(payload["sub"]):
-                user = User(
-                    id=payload["sub"],
-                    org_id=payload["org_id"],
-                    email=payload["email"],
-                    name=payload.get("name", ""),
-                )
+            if not await _is_revoked(payload["jti"]):
+                db_user = await users_db.get_user_by_id(payload["sub"])
+                if db_user:
+                    user = User(
+                        id=payload["sub"],
+                        org_id=payload["org_id"],
+                        email=payload["email"],
+                        name=payload.get("name", ""),
+                        is_admin=bool(db_user.get("is_admin", False)),
+                    )
         except jwt.PyJWTError:
             pass
     request.state.user = user
