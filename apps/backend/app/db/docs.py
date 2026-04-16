@@ -123,3 +123,43 @@ async def list_collaborators(doc_id: uuid.UUID) -> list[dict]:
             doc_id,
         )
         return [dict(r) for r in rows]
+
+
+async def list_collaborators_for_owner(owner_id: str) -> list[dict]:
+    async with Acquire() as conn:
+        rows = await conn.fetch(
+            """
+            SELECT
+                u.id AS user_id,
+                u.email,
+                u.name AS display_name,
+                COUNT(dc.doc_id) AS doc_count,
+                ARRAY_AGG(dc.role) AS roles,
+                ARRAY_AGG(jsonb_build_object(
+                    'doc_id', d.id::text,
+                    'doc_title', d.title,
+                    'role', dc.role
+                )) AS docs
+            FROM doc_collaborators dc
+            JOIN docs d ON d.id = dc.doc_id
+            JOIN users u ON u.id = dc.user_id
+            WHERE d.owner_id = $1
+            GROUP BY u.id, u.email, u.name
+            ORDER BY u.name NULLS LAST, u.email
+            """,
+            owner_id,
+        )
+        return [dict(r) for r in rows]
+
+
+async def bulk_remove_collaborator(owner_id: str, user_id: str) -> int:
+    async with Acquire() as conn:
+        result = await conn.execute(
+            """
+            DELETE FROM doc_collaborators
+            WHERE user_id = $1
+              AND doc_id IN (SELECT id FROM docs WHERE owner_id = $2)
+            """,
+            user_id, owner_id,
+        )
+    return int(result.split()[-1])
