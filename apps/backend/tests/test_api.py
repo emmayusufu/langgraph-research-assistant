@@ -44,10 +44,12 @@ async def test_stream_endpoint_yields_events_and_session_id():
 
     session_id = uuid.uuid4()
 
+    mock_user.org_id = "org"
     app.dependency_overrides[real_current_user] = lambda: mock_user
     try:
         with (
-            patch("app.main.graph", mock_graph),
+            patch("app.main.build_graph", return_value=mock_graph),
+            patch("app.main.get_user_llm", new=AsyncMock(return_value=MagicMock())),
             patch("app.db.sessions.create_session", new=AsyncMock(return_value=session_id)),
             patch("app.db.sessions.save_message", new=AsyncMock()),
             patch("app.db.sessions.bump_updated_at", new=AsyncMock()),

@@ -31,7 +31,7 @@ def test_inline_endpoint_requires_auth():
 def test_inline_endpoint_streams_sse_events():
     app.dependency_overrides[real_current_user] = _make_user
     try:
-        with patch("app.routers.ai.get_inline_llm", return_value=_fake_llm()):
+        with patch("app.routers.ai.get_user_llm", new_callable=AsyncMock, return_value=_fake_llm()):
             response = TestClient(app).post(
                 "/api/v1/ai/inline",
                 json={"action": "improve", "selection": "original text", "context": ""},
@@ -62,7 +62,7 @@ def test_inline_endpoint_rejects_unknown_action():
 def test_inline_endpoint_handles_grammar_without_editor():
     app.dependency_overrides[real_current_user] = _make_user
     try:
-        with patch("app.routers.ai.get_inline_llm", return_value=_fake_llm()):
+        with patch("app.routers.ai.get_user_llm", new_callable=AsyncMock, return_value=_fake_llm()):
             response = TestClient(app).post(
                 "/api/v1/ai/inline",
                 json={"action": "grammar", "selection": "origianl text"},

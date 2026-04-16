@@ -7,10 +7,10 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 from app.agents.inline.graph import run_inline_graph
-from app.agents.inline.llm_client import get_inline_llm
 from app.agents.inline.state import InlineAIState
 from app.middleware.auth import current_user
 from app.models.user import User
+from app.services.llm_resolver import get_user_llm
 
 router = APIRouter(prefix="/api/v1/ai", tags=["ai"])
 
@@ -47,6 +47,7 @@ async def inline_ai(
     req: InlineAIRequest,
     user: User = Depends(current_user),
 ) -> StreamingResponse:
+    llm = await get_user_llm(user.id, user.org_id)
     queue: asyncio.Queue = asyncio.Queue()
 
     async def emit(event: str, data: dict) -> None:
@@ -64,7 +65,7 @@ async def inline_ai(
 
     async def runner() -> None:
         try:
-            await run_inline_graph(state, emit, get_inline_llm())
+            await run_inline_graph(state, emit, llm)
         except Exception as exc:
             await queue.put(("error", {"message": str(exc)}))
         finally:

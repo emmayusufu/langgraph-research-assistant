@@ -17,6 +17,7 @@ from app.routers.auth import router as auth_router
 from app.routers.docs import router as docs_router
 from app.routers.sessions import router as sessions_router
 from app.routers.users import router as users_router
+from app.services.llm_resolver import get_user_llm
 
 
 @asynccontextmanager
@@ -38,7 +39,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-graph = build_graph()
 app.include_router(auth_router)
 app.include_router(sessions_router)
 app.include_router(docs_router)
@@ -73,6 +73,8 @@ async def health():
 
 @app.post("/api/v1/research")
 async def research(request: ResearchRequest, user: User = Depends(current_user)):
+    llm = await get_user_llm(user.id, user.org_id)
+    graph = build_graph(llm)
     try:
         result = await graph.ainvoke(_initial_state(request.query))
         return {
@@ -92,6 +94,9 @@ def _serialize_message(msg):
 
 @app.post("/api/v1/research/stream")
 async def research_stream(request: ResearchRequest, user: User = Depends(current_user)):
+    llm = await get_user_llm(user.id, user.org_id)
+    graph = build_graph(llm)
+
     async def event_generator():
         session_id = None
         try:

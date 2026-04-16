@@ -1,3 +1,5 @@
+from functools import partial
+
 from langgraph.graph import START, StateGraph
 
 from app.agents.coder import coder_node
@@ -8,14 +10,14 @@ from app.agents.writer import writer_node
 from app.state import ResearchState
 
 
-def build_graph():
+def build_graph(llm):
     builder = StateGraph(ResearchState)
 
     builder.add_node("supervisor", supervisor_node)
-    builder.add_node("planner", planner_node)
+    builder.add_node("planner", partial(planner_node, llm=llm))
     builder.add_node("researcher", researcher_node)
     builder.add_node("coder", coder_node)
-    builder.add_node("writer", writer_node)
+    builder.add_node("writer", partial(writer_node, llm=llm))
 
     builder.add_edge(START, "supervisor")
     builder.add_edge("planner", "supervisor")
