@@ -6,8 +6,8 @@ import IconButton from "@mui/material/IconButton";
 import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
-import LogoutRoundedIcon from "@mui/icons-material/LogoutRounded";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
+import { UserMenu } from "@/components/settings/UserMenu";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import type { Doc } from "@/lib/types";
 
@@ -22,11 +22,6 @@ export function DocSidebar({ docs, currentId, creating, onCreate }: Props) {
   const router = useRouter();
   const user = useCurrentUser();
   const firstName = user?.name?.split(" ")[0] ?? "";
-
-  const handleSignOut = async () => {
-    await fetch("/api/backend/api/v1/auth/logout", { method: "POST" });
-    window.location.href = "/login";
-  };
 
   return (
     <Box
@@ -256,39 +251,9 @@ export function DocSidebar({ docs, currentId, creating, onCreate }: Props) {
           gap: 1,
         }}
       >
-        <Tooltip title={user?.email ?? ""} placement="top">
-          <Typography
-            noWrap
-            sx={{
-              fontSize: "0.72rem",
-              fontWeight: 600,
-              color: "text.secondary",
-              opacity: 0.7,
-              flex: 1,
-              minWidth: 0,
-            }}
-          >
-            {user?.email ?? ""}
-          </Typography>
-        </Tooltip>
+        {user && <UserMenu user={user} />}
         <Box sx={{ display: "flex", alignItems: "center", gap: 0.25, flexShrink: 0 }}>
           <ThemeToggle />
-          <Tooltip title="Sign out">
-            <IconButton
-              size="small"
-              onClick={handleSignOut}
-              sx={{
-                width: 26,
-                height: 26,
-                color: "text.secondary",
-                opacity: 0.55,
-                transition: "all 0.2s",
-                "&:hover": { opacity: 1, color: "text.primary" },
-              }}
-            >
-              <LogoutRoundedIcon sx={{ fontSize: 13 }} />
-            </IconButton>
-          </Tooltip>
         </Box>
       </Box>
     </Box>
