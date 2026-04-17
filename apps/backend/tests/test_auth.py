@@ -108,7 +108,13 @@ def test_me_returns_current_user():
         app.dependency_overrides.pop(real_current_user, None)
     assert resp.status_code == 200
     data = resp.json()
-    assert data == {"id": "user1", "email": "alice@acme.com", "name": "Alice Smith", "org_id": "org1"}
+    assert data == {
+        "id": "user1",
+        "email": "alice@acme.com",
+        "name": "Alice Smith",
+        "org_id": "org1",
+        "is_admin": False,
+    }
 
 
 def test_logout_without_cookie_returns_204():

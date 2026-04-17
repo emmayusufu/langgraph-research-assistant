@@ -111,3 +111,17 @@ async def remove_collaborator(
     role = await db.get_role(doc_id, user.id)
     await authorize(role, "manage_collaborators")
     await db.remove_collaborator(doc_id, collab_user_id)
+
+
+collab_router = APIRouter(prefix="/api/v1/content/collaborators", tags=["collaborators"])
+
+
+@collab_router.get("/my")
+async def list_my_collaborators(user: User = Depends(current_user)):
+    return await db.list_collaborators_for_owner(user.id)
+
+
+@collab_router.delete("/{collab_user_id}")
+async def bulk_remove(collab_user_id: str, user: User = Depends(current_user)):
+    count = await db.bulk_remove_collaborator(user.id, collab_user_id)
+    return {"removed_count": count}

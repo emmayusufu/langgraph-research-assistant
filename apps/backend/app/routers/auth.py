@@ -80,7 +80,13 @@ async def logout(request: Request, response: Response):
 
 @router.get("/me")
 async def me(user: User = Depends(current_user)):
-    return {"id": user.id, "email": user.email, "name": user.name, "org_id": user.org_id}
+    return {
+        "id": user.id,
+        "email": user.email,
+        "name": user.name,
+        "org_id": user.org_id,
+        "is_admin": user.is_admin,
+    }
 
 
 async def _revoke(jti: str, exp: int) -> None:

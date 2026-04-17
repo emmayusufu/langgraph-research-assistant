@@ -14,7 +14,7 @@ from app.middleware.auth import attach_user, current_user
 from app.models.user import User
 from app.routers.ai import router as ai_router
 from app.routers.auth import router as auth_router
-from app.routers.docs import router as docs_router
+from app.routers.docs import collab_router, router as docs_router
 from app.routers.sessions import router as sessions_router
 from app.routers.settings import router as settings_router
 from app.routers.users import router as users_router
@@ -43,6 +43,7 @@ app.add_middleware(
 app.include_router(auth_router)
 app.include_router(sessions_router)
 app.include_router(docs_router)
+app.include_router(collab_router)
 app.include_router(users_router)
 app.include_router(ai_router)
 app.include_router(settings_router)
