@@ -26,9 +26,13 @@ class AddCollaboratorRequest(BaseModel):
     role: str
 
 
+class UpdateVisibilityRequest(BaseModel):
+    visibility: str
+
+
 @router.post("", status_code=201)
 async def create_doc(body: CreateDocRequest, user: User = Depends(current_user)):
-    doc_id = await db.create_doc(user.id, body.title)
+    doc_id = await db.create_doc(user.id, user.org_id, body.title)
     return {"id": str(doc_id)}
 
 
@@ -60,6 +64,7 @@ async def get_doc(doc_id: uuid.UUID, user: User = Depends(current_user)):
         "title": doc["title"],
         "content": doc["content"],
         "owner_id": doc["owner_id"],
+        "visibility": doc["visibility"],
         "updated_at": doc["updated_at"].isoformat(),
         "role": role,
         "collaborators": [
@@ -86,6 +91,16 @@ async def delete_doc(doc_id: uuid.UUID, user: User = Depends(current_user)):
     role = await db.get_role(doc_id, user.id)
     await authorize(role, "delete")
     await db.delete_doc(doc_id)
+
+
+@router.patch("/{doc_id}/visibility", status_code=204)
+async def update_visibility(doc_id: uuid.UUID, body: UpdateVisibilityRequest, user: User = Depends(current_user)):
+    role = await db.get_role(doc_id, user.id)
+    if role != "owner":
+        raise HTTPException(status_code=403, detail="Only the owner can change visibility")
+    if body.visibility not in ("private", "org"):
+        raise HTTPException(status_code=422, detail="visibility must be 'private' or 'org'")
+    await db.update_visibility(doc_id, body.visibility)
 
 
 @router.post("/{doc_id}/collaborators", status_code=201)

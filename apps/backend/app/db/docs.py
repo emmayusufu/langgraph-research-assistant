@@ -4,11 +4,12 @@ import uuid
 from app.db import Acquire
 
 
-async def create_doc(owner_id: str, title: str) -> uuid.UUID:
+async def create_doc(owner_id: str, org_id: str, title: str) -> uuid.UUID:
     async with Acquire() as conn:
         row = await conn.fetchrow(
-            "INSERT INTO docs (owner_id, title) VALUES ($1, $2) RETURNING id",
+            "INSERT INTO docs (owner_id, org_id, title) VALUES ($1, $2, $3) RETURNING id",
             owner_id,
+            org_id,
             title,
         )
         return row["id"]
@@ -18,11 +19,16 @@ async def get_role(doc_id: uuid.UUID, user_id: str) -> str | None:
     async with Acquire() as conn:
         row = await conn.fetchrow(
             """
-            SELECT CASE WHEN d.owner_id = $2 THEN 'owner'
-                        ELSE dc.role
-                   END AS role
+            SELECT
+                CASE
+                    WHEN d.owner_id = $2 THEN 'owner'
+                    WHEN dc.role IS NOT NULL THEN dc.role
+                    WHEN d.visibility = 'org' AND d.org_id = u.org_id THEN 'editor'
+                    ELSE NULL
+                END AS role
             FROM docs d
             LEFT JOIN doc_collaborators dc ON dc.doc_id = d.id AND dc.user_id = $2
+            LEFT JOIN users u ON u.id = $2
             WHERE d.id = $1
             """,
             doc_id,
@@ -36,7 +42,7 @@ async def get_role(doc_id: uuid.UUID, user_id: str) -> str | None:
 async def get_doc(doc_id: uuid.UUID) -> dict | None:
     async with Acquire() as conn:
         row = await conn.fetchrow(
-            "SELECT id, owner_id, title, content, created_at, updated_at FROM docs WHERE id = $1",
+            "SELECT id, owner_id, org_id, title, content, visibility, created_at, updated_at FROM docs WHERE id = $1",
             doc_id,
         )
         return dict(row) if row else None
@@ -47,15 +53,31 @@ async def list_docs(user_id: str) -> list[dict]:
         rows = await conn.fetch(
             """
             SELECT d.id, d.title, d.updated_at, d.owner_id,
-                   CASE WHEN d.owner_id = $1 THEN 'owner' ELSE dc.role END AS role
+                   CASE
+                       WHEN d.owner_id = $1 THEN 'owner'
+                       WHEN dc.role IS NOT NULL THEN dc.role
+                       ELSE 'editor'
+                   END AS role
             FROM docs d
             LEFT JOIN doc_collaborators dc ON dc.doc_id = d.id AND dc.user_id = $1
-            WHERE d.owner_id = $1 OR dc.user_id = $1
+            LEFT JOIN users u ON u.id = $1
+            WHERE d.owner_id = $1
+               OR dc.user_id = $1
+               OR (d.visibility = 'org' AND d.org_id = u.org_id)
             ORDER BY d.updated_at DESC
             """,
             user_id,
         )
         return [dict(r) for r in rows]
+
+
+async def update_visibility(doc_id: uuid.UUID, visibility: str) -> None:
+    async with Acquire() as conn:
+        await conn.execute(
+            "UPDATE docs SET visibility = $1, updated_at = NOW() WHERE id = $2",
+            visibility,
+            doc_id,
+        )
 
 
 async def update_doc(doc_id: uuid.UUID, title: str | None, content: str | None) -> None:
