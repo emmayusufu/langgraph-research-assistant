@@ -10,7 +10,8 @@ from pydantic import BaseModel
 from app.db import close_pool, init_pool
 from app.db import sessions as db_sessions
 from app.graph import build_graph
-from app.middleware.auth import attach_user, current_user
+from app.middleware.auth import attach_user
+from app.middleware.ratelimit import rate_limit
 from app.models.user import User
 from app.routers.ai import router as ai_router
 from app.routers.auth import router as auth_router
@@ -77,7 +78,7 @@ async def health():
 
 
 @app.post("/api/v1/research")
-async def research(request: ResearchRequest, user: User = Depends(current_user)):
+async def research(request: ResearchRequest, user: User = Depends(rate_limit())):
     llm = await get_user_llm(user.id, user.org_id)
     graph = build_graph(llm)
     try:
@@ -98,7 +99,7 @@ def _serialize_message(msg):
 
 
 @app.post("/api/v1/research/stream")
-async def research_stream(request: ResearchRequest, user: User = Depends(current_user)):
+async def research_stream(request: ResearchRequest, user: User = Depends(rate_limit())):
     llm = await get_user_llm(user.id, user.org_id)
     graph = build_graph(llm)
 

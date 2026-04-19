@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field
 
 from app.agents.inline.graph import run_inline_graph
 from app.agents.inline.state import InlineAIState
-from app.middleware.auth import current_user
+from app.middleware.ratelimit import rate_limit
 from app.models.user import User
 from app.services.llm_resolver import get_user_llm
 
@@ -45,7 +45,7 @@ def _format_sse(event: str, data: dict) -> str:
 @router.post("/inline")
 async def inline_ai(
     req: InlineAIRequest,
-    user: User = Depends(current_user),
+    user: User = Depends(rate_limit()),
 ) -> StreamingResponse:
     llm = await get_user_llm(user.id, user.org_id)
     queue: asyncio.Queue = asyncio.Queue()
