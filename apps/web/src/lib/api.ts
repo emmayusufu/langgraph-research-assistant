@@ -192,6 +192,18 @@ export async function removeCollaborator(docId: string, userId: string): Promise
   if (!response.ok) throw new Error(`Failed to remove collaborator: ${response.statusText}`);
 }
 
+export async function updateDocVisibility(docId: string, visibility: "private" | "org"): Promise<void> {
+  const response = await apiFetch(
+    `${API_BASE}/api/v1/content/docs/${docId}/visibility`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ visibility }),
+    },
+  );
+  if (!response.ok) throw new Error(`Failed to update visibility: ${response.statusText}`);
+}
+
 export type InlineAction =
   | "improve"
   | "shorter"

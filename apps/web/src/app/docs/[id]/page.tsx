@@ -41,7 +41,7 @@ function formatDate(iso?: string) {
 export default function DocPage({ params }: Props) {
   const { id } = use(params);
   const router = useRouter();
-  const { doc, isSaving, saveTitle, saveContent, addCollaborator, updateCollaboratorRole, removeCollaborator, saveError, clearSaveError } = useDoc(id);
+  const { doc, isSaving, saveTitle, saveContent, addCollaborator, updateCollaboratorRole, removeCollaborator, updateVisibility, saveError, clearSaveError } = useDoc(id);
   const { docs, createDoc, refresh: refreshDocs } = useDocs();
   const currentUser = useCurrentUser();
   const [researchOpen, setResearchOpen] = useState(false);
@@ -190,9 +190,11 @@ export default function DocPage({ params }: Props) {
             <ShareButton
               collaborators={doc.collaborators}
               isOwner={doc.role === "owner"}
+              visibility={doc.visibility}
               onAdd={addCollaborator}
               onUpdateRole={updateCollaboratorRole}
               onRemove={removeCollaborator}
+              onUpdateVisibility={updateVisibility}
             />
           </Box>
         </Box>

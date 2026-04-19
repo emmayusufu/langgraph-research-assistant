@@ -19,17 +19,39 @@ import type { DocCollaborator } from "@/lib/types";
 interface CollaboratorListProps {
   collaborators: DocCollaborator[];
   isOwner: boolean;
+  visibility: "private" | "org";
   onAdd: (email: string, role: "editor" | "viewer") => Promise<void>;
   onUpdateRole: (userId: string, role: "editor" | "viewer") => Promise<void>;
   onRemove: (userId: string) => Promise<void>;
+  onUpdateVisibility: (visibility: "private" | "org") => Promise<void>;
 }
+
+const roleMenuPaperSx = (theme: import("@mui/material/styles").Theme) => ({
+  boxShadow: "none",
+  border: "1px solid",
+  borderColor: "divider",
+  borderRadius: "8px",
+  minWidth: "240px !important",
+  py: 0.5,
+  backgroundColor: "#EEE8D8",
+  ...theme.applyStyles("dark", { backgroundColor: "#121006" }),
+  "& .MuiMenuItem-root": {
+    borderRadius: "6px",
+    mx: "4px",
+    width: "calc(100% - 8px)",
+  },
+  "& .MuiMenuItem-root.Mui-selected": { backgroundColor: "transparent" },
+  "& .MuiMenuItem-root.Mui-selected:hover": { backgroundColor: "action.hover" },
+});
 
 export function CollaboratorList({
   collaborators,
   isOwner,
+  visibility,
   onAdd,
   onUpdateRole,
   onRemove,
+  onUpdateVisibility,
 }: CollaboratorListProps) {
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<"editor" | "viewer">("editor");
@@ -53,12 +75,86 @@ export function CollaboratorList({
           fontWeight: 600,
           color: "text.secondary",
           opacity: 0.65,
+          mb: 1,
+        }}
+      >
+        General access
+      </Typography>
+      <Box
+        sx={{
+          mb: 2,
+          pb: 1.5,
+          borderBottom: "1px solid",
+          borderColor: "divider",
+        }}
+      >
+        {isOwner ? (
+          <Select
+            size="small"
+            value={visibility}
+            onChange={(e) => void onUpdateVisibility(e.target.value as "private" | "org")}
+            renderValue={(v) => (v === "org" ? "Anyone in your org" : "Private")}
+            MenuProps={{ PaperProps: { sx: roleMenuPaperSx } }}
+            sx={{
+              fontSize: "0.82rem",
+              fontWeight: 600,
+              height: 32,
+              width: "100%",
+              "& .MuiOutlinedInput-notchedOutline": { border: "none" },
+              "& .MuiSelect-select": { py: 0, pl: 0, pr: "32px !important" },
+            }}
+          >
+            {(["private", "org"] as const).map((val) => (
+              <MenuItem key={val} value={val}>
+                <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1.5, width: "100%" }}>
+                  <Box sx={{ flex: 1 }}>
+                    <Typography sx={{ fontSize: "0.82rem", fontWeight: 600 }}>
+                      {val === "org" ? "Anyone in your org" : "Private"}
+                    </Typography>
+                    <Typography sx={{ fontSize: "0.72rem", color: "text.secondary" }}>
+                      {val === "org"
+                        ? "Your whole team can view and edit"
+                        : "Only people invited below"}
+                    </Typography>
+                  </Box>
+                  {visibility === val && (
+                    <DoneAllRoundedIcon
+                      sx={{ fontSize: 15, color: "primary.main", mt: 0.3, flexShrink: 0 }}
+                    />
+                  )}
+                </Box>
+              </MenuItem>
+            ))}
+          </Select>
+        ) : (
+          <Typography sx={{ fontSize: "0.82rem", fontWeight: 500, color: "text.secondary" }}>
+            {visibility === "org" ? "Anyone in your org" : "Private"}
+          </Typography>
+        )}
+      </Box>
+      <Typography
+        sx={{
+          fontSize: "0.78rem",
+          fontWeight: 600,
+          color: "text.secondary",
+          opacity: 0.65,
           mb: 1.25,
         }}
       >
         Collaborators
       </Typography>
-      <List dense disablePadding sx={{ mb: 2 }}>
+      <List
+        dense
+        disablePadding
+        sx={{
+          mb: 2,
+          maxHeight: 180,
+          overflowY: "auto",
+          pr: 0.5,
+          "&::-webkit-scrollbar": { width: 6 },
+          "&::-webkit-scrollbar-thumb": { backgroundColor: "divider", borderRadius: 3 },
+        }}
+      >
         {collaborators.map((c) => (
           <ListItem
             key={c.user_id}

@@ -45,6 +45,7 @@ export interface DocCollaborator {
 
 export interface DocDetail extends Doc {
   content: string;
+  visibility: "private" | "org";
   collaborators: DocCollaborator[];
 }
 

@@ -8,6 +8,7 @@ import {
   addCollaborator as apiAddCollaborator,
   removeCollaborator as apiRemoveCollaborator,
   updateCollaboratorRole as apiUpdateCollaboratorRole,
+  updateDocVisibility as apiUpdateDocVisibility,
 } from "@/lib/api";
 
 interface UseDocReturn {
@@ -18,6 +19,7 @@ interface UseDocReturn {
   addCollaborator: (email: string, role: "editor" | "viewer") => Promise<void>;
   updateCollaboratorRole: (userId: string, role: "editor" | "viewer") => Promise<void>;
   removeCollaborator: (userId: string) => Promise<void>;
+  updateVisibility: (visibility: "private" | "org") => Promise<void>;
   saveError: string | null;
   clearSaveError: () => void;
 }
@@ -120,7 +122,24 @@ export function useDoc(id: string): UseDocReturn {
     [id],
   );
 
+  const updateVisibility = useCallback(
+    async (visibility: "private" | "org") => {
+      let prev: DocDetail | null = null;
+      setDoc((d) => {
+        prev = d;
+        return d ? { ...d, visibility } : d;
+      });
+      try {
+        await apiUpdateDocVisibility(id, visibility);
+      } catch {
+        setDoc(prev);
+        setSaveError("Failed to update visibility");
+      }
+    },
+    [id],
+  );
+
   const clearSaveError = useCallback(() => setSaveError(null), []);
 
-  return { doc, isSaving, saveTitle, saveContent, addCollaborator, updateCollaboratorRole, removeCollaborator, saveError, clearSaveError };
+  return { doc, isSaving, saveTitle, saveContent, addCollaborator, updateCollaboratorRole, removeCollaborator, updateVisibility, saveError, clearSaveError };
 }

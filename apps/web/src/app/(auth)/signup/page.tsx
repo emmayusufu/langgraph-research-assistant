@@ -194,22 +194,12 @@ export default function SignupPage() {
               type="submit"
               variant="contained"
               color="primary"
-              size="large"
               fullWidth
-              endIcon={loading ? undefined : <ArrowForwardIcon />}
               disabled={loading}
-              sx={{
-                mt: 0.5,
-                fontWeight: 700,
-                boxShadow: "0 4px 20px rgba(163,176,135,0.3)",
-                "&:hover:not(:disabled)": {
-                  boxShadow: "0 6px 24px rgba(163,176,135,0.4)",
-                  transform: "translateY(-1px)",
-                },
-                transition: "all 0.2s ease",
-              }}
+              endIcon={loading ? <CircularProgress size={15} color="inherit" /> : <ArrowForwardIcon />}
+              sx={{ fontWeight: 700, mt: 0.5 }}
             >
-              {loading ? <CircularProgress size={20} sx={{ color: "white" }} /> : "Create workspace"}
+              {loading ? "Creating…" : "Create workspace"}
             </Button>
           </Stack>
 

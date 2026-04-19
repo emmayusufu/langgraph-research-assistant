@@ -10,12 +10,14 @@ import type { DocCollaborator } from "@/lib/types";
 interface Props {
   collaborators: DocCollaborator[];
   isOwner: boolean;
+  visibility: "private" | "org";
   onAdd: (email: string, role: "editor" | "viewer") => Promise<void>;
   onUpdateRole: (userId: string, role: "editor" | "viewer") => Promise<void>;
   onRemove: (userId: string) => Promise<void>;
+  onUpdateVisibility: (visibility: "private" | "org") => Promise<void>;
 }
 
-export function ShareButton({ collaborators, isOwner, onAdd, onUpdateRole, onRemove }: Props) {
+export function ShareButton({ collaborators, isOwner, visibility, onAdd, onUpdateRole, onRemove, onUpdateVisibility }: Props) {
   const [anchor, setAnchor] = useState<HTMLButtonElement | null>(null);
 
   return (
@@ -58,9 +60,11 @@ export function ShareButton({ collaborators, isOwner, onAdd, onUpdateRole, onRem
         <CollaboratorList
           collaborators={collaborators}
           isOwner={isOwner}
+          visibility={visibility}
           onAdd={onAdd}
           onUpdateRole={onUpdateRole}
           onRemove={onRemove}
+          onUpdateVisibility={onUpdateVisibility}
         />
       </Popover>
     </>

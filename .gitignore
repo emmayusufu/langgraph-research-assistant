@@ -43,3 +43,9 @@ build/
 *.log
 tmp/
 temp/
+
+# Playwright / test artifacts
+.playwright-mcp/
+
+# Screenshots
+*.png
