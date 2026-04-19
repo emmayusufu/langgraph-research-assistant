@@ -5,6 +5,8 @@ import { useEditor, EditorContent, ReactNodeViewRenderer } from "@tiptap/react";
 import { BubbleMenu, FloatingMenu } from "@tiptap/react/menus";
 import StarterKit from "@tiptap/starter-kit";
 import Collaboration from "@tiptap/extension-collaboration";
+import { Extension } from "@tiptap/core";
+import { yCursorPlugin } from "@tiptap/y-tiptap";
 import Placeholder from "@tiptap/extension-placeholder";
 import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
 import { HocuspocusProvider } from "@hocuspocus/provider";
@@ -31,10 +33,32 @@ import { looksLikeMarkdown, markdownToHtml } from "@/lib/markdown";
 
 const COLLAB_URL = process.env.NEXT_PUBLIC_COLLAB_URL ?? "ws://localhost:1234";
 
+const CURSOR_COLORS = ["#8B9B6E", "#B8804A", "#6E8B9B", "#9B6E8B", "#6E9B8B", "#9B8B6E"];
+
+function cursorColor(userId: string): string {
+  let hash = 0;
+  for (let i = 0; i < userId.length; i++) hash = (hash * 31 + userId.charCodeAt(i)) >>> 0;
+  return CURSOR_COLORS[hash % CURSOR_COLORS.length];
+}
+
+const CollaborationCursorExt = Extension.create<{ provider: HocuspocusProvider | null; user: { name: string; color: string } | null }>({
+  name: "collaborationCursor",
+  addOptions() {
+    return { provider: null, user: null };
+  },
+  addProseMirrorPlugins() {
+    const { provider, user } = this.options;
+    if (!provider?.awareness) return [];
+    if (user) provider.awareness.setLocalStateField("user", user);
+    return [yCursorPlugin(provider.awareness)];
+  },
+});
+
 interface DocEditorProps {
   docId: string;
   content: string;
   readOnly: boolean;
+  user?: { id: string; name: string };
   onContentSave: (content: string) => void;
   onContentChange?: (content: string) => void;
   onAskAI?: () => void;
@@ -49,6 +73,28 @@ const withSlashDelete = (fn: (e: Editor) => void) => (e: Editor) => {
 };
 
 const editorSx = {
+  "& .ProseMirror-yjs-cursor": {
+    position: "relative",
+    marginLeft: "-1px",
+    marginRight: "-1px",
+    borderLeft: "2px solid",
+    borderRight: "none",
+    wordBreak: "normal",
+    pointerEvents: "none",
+    "& > div": {
+      position: "absolute",
+      top: "-1.4em",
+      left: "-1px",
+      fontSize: "0.65rem",
+      fontWeight: 600,
+      lineHeight: "normal",
+      padding: "1px 5px",
+      borderRadius: "3px 3px 3px 0",
+      color: "#fff",
+      whiteSpace: "nowrap",
+      pointerEvents: "none",
+    },
+  },
   "& .ProseMirror": {
     outline: "none",
     minHeight: "60vh",
@@ -140,7 +186,7 @@ const LumenCodeBlock = CodeBlockLowlight.extend({
   },
 });
 
-export function DocEditor({ docId, content, readOnly, onContentSave, onContentChange, onAskAI }: DocEditorProps) {
+export function DocEditor({ docId, content, readOnly, user, onContentSave, onContentChange, onAskAI }: DocEditorProps) {
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSaved = useRef<string>(content);
   const [wsToken, setWsToken] = useState<string | null>(null);
@@ -201,6 +247,10 @@ export function DocEditor({ docId, content, readOnly, onContentSave, onContentCh
       Placeholder.configure({ placeholder: "Start writing, or type '/' for commands…", showOnlyCurrent: true }),
       ...(provider ? [
         Collaboration.configure({ document: provider.document }),
+        CollaborationCursorExt.configure({
+          provider,
+          user: user ? { name: user.name, color: cursorColor(user.id) } : null,
+        }),
       ] : []),
     ],
     content: provider ? undefined : content,
@@ -217,6 +267,11 @@ export function DocEditor({ docId, content, readOnly, onContentSave, onContentCh
   useEffect(() => () => {
     if (saveTimer.current) clearTimeout(saveTimer.current);
   }, []);
+
+  useEffect(() => {
+    if (!provider?.awareness || !user) return;
+    provider.awareness.setLocalStateField("user", { name: user.name, color: cursorColor(user.id) });
+  }, [provider, user]);
 
   useEffect(() => {
     if (!editor || !provider || !synced) return;

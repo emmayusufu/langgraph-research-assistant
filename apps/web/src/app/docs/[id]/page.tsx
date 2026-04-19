@@ -15,6 +15,7 @@ import { DocSidebar } from "@/components/docs/DocSidebar";
 import { ShareButton } from "@/components/docs/ShareButton";
 import { useDoc } from "@/hooks/useDoc";
 import { useDocs } from "@/hooks/useDocs";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -42,6 +43,7 @@ export default function DocPage({ params }: Props) {
   const router = useRouter();
   const { doc, isSaving, saveTitle, saveContent, addCollaborator, updateCollaboratorRole, removeCollaborator, saveError, clearSaveError } = useDoc(id);
   const { docs, createDoc, refresh: refreshDocs } = useDocs();
+  const currentUser = useCurrentUser();
   const [researchOpen, setResearchOpen] = useState(false);
   const [creating, setCreating] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -303,6 +305,7 @@ export default function DocPage({ params }: Props) {
               docId={id}
               content={doc.content}
               readOnly={!canEdit}
+              user={currentUser ?? undefined}
               onContentSave={saveContent}
               onContentChange={setLiveContent}
               onAskAI={canEdit ? () => setResearchOpen(true) : undefined}
