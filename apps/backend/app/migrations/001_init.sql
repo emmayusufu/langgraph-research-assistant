@@ -53,6 +53,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS docs_updated_at ON docs;
 CREATE TRIGGER docs_updated_at
 BEFORE UPDATE ON docs
 FOR EACH ROW EXECUTE FUNCTION set_updated_at();
