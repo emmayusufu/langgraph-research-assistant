@@ -18,8 +18,8 @@ export function useSessions(): UseSessionsReturn {
       try {
         const data = await fetchSessions();
         setSessions(data);
-      } catch {
-        // non-fatal
+      } catch (err) {
+        console.error("failed to load sessions", err);
       }
     };
     void loadSessions();
@@ -29,8 +29,8 @@ export function useSessions(): UseSessionsReturn {
     try {
       const data = await fetchSessions();
       setSessions(data);
-    } catch {
-      // non-fatal
+    } catch (err) {
+      console.error("failed to refresh sessions", err);
     }
   }, []);
 
@@ -39,7 +39,8 @@ export function useSessions(): UseSessionsReturn {
       setSessions((prev) => prev.filter((s) => s.id !== id));
       try {
         await apiDeleteSession(id);
-      } catch {
+      } catch (err) {
+        console.error("failed to delete session", id, err);
         await refresh();
       }
     },

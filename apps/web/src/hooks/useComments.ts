@@ -19,8 +19,8 @@ export function useComments(docId: string) {
       const next = await fetchComments(docId);
       setThreads(next);
       setLoaded(true);
-    } catch {
-      // non-fatal
+    } catch (err) {
+      console.error("failed to load comments", err);
     }
   }, [docId]);
 

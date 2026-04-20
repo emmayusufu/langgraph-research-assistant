@@ -34,8 +34,8 @@ export function useDoc(id: string): UseDocReturn {
       try {
         const data = await fetchDoc(id);
         setDoc(data);
-      } catch {
-        // non-fatal
+      } catch (err) {
+        console.error("failed to load doc", id, err);
       }
     };
     void load();
@@ -51,7 +51,8 @@ export function useDoc(id: string): UseDocReturn {
       });
       try {
         await apiUpdateDoc(id, { title });
-      } catch {
+      } catch (err) {
+        console.error("saveTitle failed", err);
         setDoc(prev);
         setSaveError("Failed to save");
       }
@@ -70,7 +71,8 @@ export function useDoc(id: string): UseDocReturn {
       });
       try {
         await apiUpdateDoc(id, { content });
-      } catch {
+      } catch (err) {
+        console.error("saveContent failed", err);
         setDoc(prev);
         setSaveError("Failed to save");
       } finally {
@@ -96,7 +98,8 @@ export function useDoc(id: string): UseDocReturn {
       );
       try {
         await apiUpdateCollaboratorRole(id, userId, role);
-      } catch {
+      } catch (err) {
+        console.error("updateCollaboratorRole failed", err);
         const restored = await fetchDoc(id);
         setDoc(restored);
       }
@@ -115,7 +118,8 @@ export function useDoc(id: string): UseDocReturn {
       });
       try {
         await apiRemoveCollaborator(id, userId);
-      } catch {
+      } catch (err) {
+        console.error("removeCollaborator failed", err);
         setDoc(prev);
       }
     },
@@ -131,7 +135,8 @@ export function useDoc(id: string): UseDocReturn {
       });
       try {
         await apiUpdateDocVisibility(id, visibility);
-      } catch {
+      } catch (err) {
+        console.error("updateVisibility failed", err);
         setDoc(prev);
         setSaveError("Failed to update visibility");
       }

@@ -23,8 +23,8 @@ export function useDocs(): UseDocsReturn {
       try {
         const data = await fetchDocs();
         setDocs(data);
-      } catch {
-        // non-fatal
+      } catch (err) {
+        console.error("failed to load docs list", err);
       }
     };
     void load();
@@ -34,8 +34,8 @@ export function useDocs(): UseDocsReturn {
     try {
       const data = await fetchDocs();
       setDocs(data);
-    } catch {
-      // non-fatal
+    } catch (err) {
+      console.error("failed to refresh docs list", err);
     }
   }, []);
 
@@ -53,7 +53,8 @@ export function useDocs(): UseDocsReturn {
       setDocs((prev) => prev.filter((d) => d.id !== id));
       try {
         await apiDeleteDoc(id);
-      } catch {
+      } catch (err) {
+        console.error("failed to delete doc", id, err);
         await refresh();
       }
     },
