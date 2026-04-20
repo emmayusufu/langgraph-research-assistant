@@ -1,3 +1,4 @@
+import logging
 from collections.abc import Callable
 
 import httpx
@@ -54,4 +55,7 @@ async def _is_revoked(jti: str) -> bool:
             )
             return not resp.json().get("result", False)
     except Exception:
+        logging.getLogger("lumen.auth").warning(
+            "OPA revocation check failed; accepting token", exc_info=True
+        )
         return False

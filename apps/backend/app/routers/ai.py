@@ -1,5 +1,6 @@
 import asyncio
 import json
+import logging
 from typing import Literal
 
 from fastapi import APIRouter, Depends
@@ -12,6 +13,7 @@ from app.middleware.ratelimit import rate_limit
 from app.models.user import User
 from app.services.llm_resolver import get_user_llm
 
+log = logging.getLogger("lumen.ai")
 router = APIRouter(prefix="/api/v1/ai", tags=["ai"])
 
 ActionName = Literal[
@@ -66,8 +68,9 @@ async def inline_ai(
     async def runner() -> None:
         try:
             await run_inline_graph(state, emit, llm)
-        except Exception as exc:
-            await queue.put(("error", {"message": str(exc)}))
+        except Exception:
+            log.exception("inline AI failed for user %s action=%s", user.id, req.action)
+            await queue.put(("error", {"message": "AI request failed. Try again."}))
         finally:
             await queue.put(None)
 

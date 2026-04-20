@@ -1,4 +1,5 @@
 import json
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI
@@ -6,6 +7,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse
 from langchain_core.messages import HumanMessage
 from pydantic import BaseModel
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(name)s - %(message)s",
+)
+log = logging.getLogger("lumen")
 
 from app.db import close_pool, init_pool
 from app.db import sessions as db_sessions
@@ -93,8 +100,9 @@ async def research(request: ResearchRequest, user: User = Depends(rate_limit()))
             "research_results": result.get("research_results", []),
             "code_results": result.get("code_results", []),
         }
-    except Exception as e:
-        return JSONResponse(status_code=500, content={"error": str(e)})
+    except Exception:
+        log.exception("research graph failed for user %s", user.id)
+        return JSONResponse(status_code=500, content={"error": "Research failed. Check server logs."})
 
 
 def _serialize_message(msg):
@@ -114,7 +122,7 @@ async def research_stream(request: ResearchRequest, user: User = Depends(rate_li
             session_id = await db_sessions.create_session(user.id, request.query[:80])
             await db_sessions.save_message(session_id, "user", request.query)
         except Exception:
-            pass
+            log.warning("failed to create research session for user %s", user.id, exc_info=True)
 
         output = ""
         async for event in graph.astream(_initial_state(request.query), stream_mode="updates"):
@@ -134,7 +142,7 @@ async def research_stream(request: ResearchRequest, user: User = Depends(rate_li
                 await db_sessions.save_message(session_id, "assistant", output)
                 await db_sessions.bump_updated_at(session_id)
             except Exception:
-                pass
+                log.warning("failed to persist research output to session %s", session_id, exc_info=True)
 
         done: dict = {"type": "done"}
         if session_id:
