@@ -1,6 +1,7 @@
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import Response
 from pydantic import BaseModel
 
 from app.db import docs as db
@@ -8,6 +9,7 @@ from app.db import users as users_db
 from app.middleware.auth import current_user
 from app.middleware.opa import authorize
 from app.models.user import User
+from app.services.pdf import render_pdf
 
 router = APIRouter(prefix="/api/v1/content/docs")
 
@@ -91,6 +93,22 @@ async def delete_doc(doc_id: uuid.UUID, user: User = Depends(current_user)):
     role = await db.get_role(doc_id, user.id)
     await authorize(role, "delete")
     await db.delete_doc(doc_id)
+
+
+@router.get("/{doc_id}/export/pdf")
+async def export_pdf(doc_id: uuid.UUID, user: User = Depends(current_user)):
+    role = await db.get_role(doc_id, user.id)
+    await authorize(role, "read")
+    doc = await db.get_doc(doc_id)
+    if not doc:
+        raise HTTPException(status_code=404)
+    pdf_bytes = render_pdf(doc["title"], doc["content"])
+    filename = (doc["title"].strip() or "untitled").replace("/", "_")
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}.pdf"'},
+    )
 
 
 @router.patch("/{doc_id}/visibility", status_code=204)
