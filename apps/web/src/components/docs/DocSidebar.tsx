@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import Box from "@mui/material/Box";
+import Drawer from "@mui/material/Drawer";
 import IconButton from "@mui/material/IconButton";
 import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
@@ -16,6 +17,8 @@ interface Props {
   currentId: string;
   creating: boolean;
   onCreate: () => void;
+  mobileOpen?: boolean;
+  onMobileClose?: () => void;
 }
 
 function SectionLabel({ label }: { label: string }) {
@@ -125,25 +128,14 @@ function DocItem({ doc, index, active }: { doc: Doc; index: number; active: bool
   );
 }
 
-export function DocSidebar({ docs, currentId, creating, onCreate }: Props) {
+export function DocSidebar({ docs, currentId, creating, onCreate, mobileOpen = false, onMobileClose }: Props) {
   const user = useCurrentUser();
   const firstName = user?.name?.split(" ")[0] ?? "";
   const myDocs = docs.filter((d) => d.role === "owner");
   const sharedDocs = docs.filter((d) => d.role !== "owner");
 
-  return (
-    <Box
-      sx={(theme) => ({
-        width: 264,
-        flexShrink: 0,
-        display: "flex",
-        flexDirection: "column",
-        backgroundColor: "#EEE8D8",
-        height: "100vh",
-        position: "relative",
-        ...theme.applyStyles("dark", { backgroundColor: "#121006" }),
-      })}
-    >
+  const content = (
+    <>
       <Box sx={{ px: 3.5, pt: 3.5, pb: 2 }}>
         <Typography sx={{ fontSize: "1.1rem", fontWeight: 800, letterSpacing: "-0.03em", color: "text.primary", lineHeight: 1 }}>
           Lumen
@@ -167,7 +159,7 @@ export function DocSidebar({ docs, currentId, creating, onCreate }: Props) {
         </Tooltip>
       </Box>
 
-      <Box sx={{ flex: 1, overflow: "auto", px: 1.5, py: 0.5 }}>
+      <Box sx={{ flex: 1, overflow: "auto", px: 1.5, py: 0.5 }} onClick={onMobileClose}>
         {myDocs.map((d, i) => <DocItem key={d.id} doc={d} index={i} active={d.id === currentId} />)}
 
         <Box onClick={!creating ? onCreate : undefined} className="lumen-rise"
@@ -194,6 +186,46 @@ export function DocSidebar({ docs, currentId, creating, onCreate }: Props) {
       <Box sx={{ px: 3.5, pt: 2, pb: 2.5, borderTop: "1px solid", borderColor: "divider", display: "flex", alignItems: "center", gap: 1 }}>
         {user && <UserMenu user={user} />}
       </Box>
-    </Box>
+    </>
+  );
+
+  return (
+    <>
+      <Box
+        sx={(theme) => ({
+          width: 264,
+          flexShrink: 0,
+          display: { xs: "none", md: "flex" },
+          flexDirection: "column",
+          backgroundColor: "#EEE8D8",
+          height: "100vh",
+          position: "relative",
+          ...theme.applyStyles("dark", { backgroundColor: "#121006" }),
+        })}
+      >
+        {content}
+      </Box>
+      <Drawer
+        variant="temporary"
+        open={mobileOpen}
+        onClose={onMobileClose}
+        ModalProps={{ keepMounted: true }}
+        sx={{ display: { xs: "block", md: "none" } }}
+        slotProps={{
+          paper: {
+            sx: (theme) => ({
+              width: 264,
+              display: "flex",
+              flexDirection: "column",
+              backgroundColor: "#EEE8D8",
+              height: "100vh",
+              ...theme.applyStyles("dark", { backgroundColor: "#121006" }),
+            }),
+          },
+        }}
+      >
+        {content}
+      </Drawer>
+    </>
   );
 }

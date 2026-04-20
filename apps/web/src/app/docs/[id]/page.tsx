@@ -9,6 +9,7 @@ import Snackbar from "@mui/material/Snackbar";
 import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
 import AutoAwesomeRoundedIcon from "@mui/icons-material/AutoAwesomeRounded";
+import MenuRoundedIcon from "@mui/icons-material/MenuRounded";
 import { DocEditor } from "@/components/docs/DocEditor";
 import { DocMenu } from "@/components/docs/DocMenu";
 import { DocResearchPanel } from "@/components/docs/DocResearchPanel";
@@ -49,6 +50,7 @@ export default function DocPage({ params }: Props) {
   const currentUser = useCurrentUser();
   const { provider, synced } = useCollabProvider(id);
   const [researchOpen, setResearchOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [creating, setCreating] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [liveContent, setLiveContent] = useState<string | null>(null);
@@ -80,7 +82,14 @@ export default function DocPage({ params }: Props) {
 
   return (
     <Box sx={{ display: "flex", height: "100vh", overflow: "hidden" }}>
-      <DocSidebar docs={docs} currentId={id} creating={creating} onCreate={handleCreate} />
+      <DocSidebar
+        docs={docs}
+        currentId={id}
+        creating={creating}
+        onCreate={handleCreate}
+        mobileOpen={sidebarOpen}
+        onMobileClose={() => setSidebarOpen(false)}
+      />
 
       <Box
         sx={(theme) => ({
@@ -91,7 +100,7 @@ export default function DocPage({ params }: Props) {
           pt: { xs: 0.75, md: 1 },
           pr: { xs: 0.75, md: 1 },
           pb: { xs: 0.75, md: 1 },
-          pl: { xs: 1.5, md: 2.5 },
+          pl: { xs: 0.75, md: 2.5 },
           position: "relative",
           backgroundColor: "#EEE8D8",
           ...theme.applyStyles("dark", {
@@ -117,16 +126,30 @@ export default function DocPage({ params }: Props) {
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-            px: 4,
+            px: { xs: 2, md: 4 },
             py: 2,
             flexShrink: 0,
-            gap: 3,
+            gap: { xs: 1.5, md: 3 },
             borderBottom: "1px solid",
             borderColor: "divider",
             animationDelay: "0.1s",
           }}
         >
           <Box sx={{ display: "flex", alignItems: "center", gap: 1.75, minWidth: 0, flex: 1 }}>
+            <IconButton
+              size="small"
+              onClick={() => setSidebarOpen(true)}
+              sx={{
+                display: { xs: "inline-flex", md: "none" },
+                width: 32,
+                height: 32,
+                color: "text.secondary",
+                opacity: 0.75,
+                ml: -0.5,
+              }}
+            >
+              <MenuRoundedIcon sx={{ fontSize: 18 }} />
+            </IconButton>
             <Typography
               sx={{
                 fontSize: "0.78rem",
@@ -135,6 +158,7 @@ export default function DocPage({ params }: Props) {
                 textTransform: "capitalize",
                 opacity: 0.75,
                 flexShrink: 0,
+                display: { xs: "none", sm: "block" },
               }}
             >
               {doc.role}
@@ -145,6 +169,7 @@ export default function DocPage({ params }: Props) {
                 height: 12,
                 backgroundColor: "divider",
                 flexShrink: 0,
+                display: { xs: "none", sm: "block" },
               }}
             />
             <Box sx={{ display: "flex", alignItems: "center", gap: 0.875, flexShrink: 0 }}>
