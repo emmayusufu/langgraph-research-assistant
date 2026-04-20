@@ -1,7 +1,3 @@
-CREATE DATABASE app;
-
-\c app
-
 CREATE TABLE IF NOT EXISTS orgs (
     id         TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
     name       TEXT NOT NULL,

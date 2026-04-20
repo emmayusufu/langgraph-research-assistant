@@ -4,10 +4,9 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: postgres
+      POSTGRES_DB: app
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./apps/backend/app/migrations:/docker-entrypoint-initdb.d
     ports:
       - "5434:5432"
     healthcheck:

@@ -9,6 +9,7 @@ from pydantic import BaseModel
 
 from app.db import close_pool, init_pool
 from app.db import sessions as db_sessions
+from app.db.migrations import run_pending as run_migrations
 from app.graph import build_graph
 from app.middleware.auth import attach_user
 from app.middleware.ratelimit import rate_limit
@@ -27,6 +28,7 @@ from app.services.llm_resolver import get_user_llm
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_pool()
+    await run_migrations()
     yield
     await close_pool()
 
