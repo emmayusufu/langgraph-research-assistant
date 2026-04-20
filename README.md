@@ -24,6 +24,8 @@ A self-hosted document editor with real-time collaboration, inline AI, and a res
 
 **Auth & access.** Email/password with bcrypt and a short-lived JWT in an httpOnly cookie. OPA Rego enforces per-doc access. Docs can be private (invite only) or workspace-wide. AI endpoints are rate-limited per user.
 
+**Observability.** OpenTelemetry auto-instruments every request, DB query, and outgoing HTTP call. Logs are correlated to spans via `trace_id`/`span_id`. Spans stay in-process by default; set `OTEL_EXPORTER_OTLP_ENDPOINT` to ship them to Jaeger / Tempo / SigNoz / Honeycomb / etc.
+
 **Everything works in dark mode.** Mobile layout collapses the sidebar into a drawer triggered by a hamburger; the share button becomes icon-only; popovers size to the viewport.
 
 ## Architecture
@@ -148,6 +150,9 @@ MINIO_BUCKET           lumen-uploads
 NEXT_PUBLIC_COLLAB_URL ws://localhost:1234
 
 REDIS_URL              redis://redis:6379/0   (optional; in-memory fallback)
+
+OTEL_EXPORTER_OTLP_ENDPOINT   http://collector:4318   (optional; ship spans)
+OTEL_SERVICE_NAME             lumen-backend           (optional)
 ```
 
 DeepSeek API keys live in the database, not env. Each user configures their own in Settings → API Keys (encrypted at rest). Workspace admins can also set a shared key that other members use as a fallback.
@@ -328,7 +333,7 @@ docker-compose.yml       postgres · opa · redis · research-api · collab · m
 
 ## Stack
 
-DeepSeek for the LLM calls, LangGraph for agent orchestration, FastAPI with asyncpg and SSE streaming on the backend, Hocuspocus + Yjs for the collab server, Next.js 16 App Router with React 19 and Material UI 7 on the frontend, TipTap v3 for the editor, lowlight with highlight.js for syntax colors, marked and DOMPurify for the markdown-to-ProseMirror pipeline, WeasyPrint for PDF export, MinIO for object storage, Redis for rate limit counters, PostgreSQL, OPA for authorization, Turborepo, Docker.
+DeepSeek for the LLM calls, LangGraph for agent orchestration, FastAPI with asyncpg and SSE streaming on the backend, Hocuspocus + Yjs for the collab server, Next.js 16 App Router with React 19 and Material UI 7 on the frontend, TipTap v3 for the editor, lowlight with highlight.js for syntax colors, marked and DOMPurify for the markdown-to-ProseMirror pipeline, WeasyPrint for PDF export, MinIO for object storage, Redis for rate limit counters, PostgreSQL, OPA for authorization, OpenTelemetry for traces and log correlation, Turborepo, Docker.
 
 ## License
 
