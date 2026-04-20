@@ -8,12 +8,6 @@ from fastapi.responses import JSONResponse, StreamingResponse
 from langchain_core.messages import HumanMessage
 from pydantic import BaseModel
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)s %(name)s - %(message)s",
-)
-log = logging.getLogger("lumen")
-
 from app.db import close_pool, init_pool
 from app.db import sessions as db_sessions
 from app.db.migrations import run_pending as run_migrations
@@ -21,6 +15,7 @@ from app.graph import build_graph
 from app.middleware.auth import attach_user
 from app.middleware.ratelimit import rate_limit
 from app.models.user import User
+from app.observability import setup_logging, setup_tracing
 from app.routers.ai import router as ai_router
 from app.routers.auth import router as auth_router
 from app.routers.comments import router as comments_router, thread_router as comment_thread_router
@@ -31,9 +26,12 @@ from app.routers.uploads import router as uploads_router
 from app.routers.users import router as users_router
 from app.services.llm_resolver import get_user_llm
 
+log = logging.getLogger("lumen")
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    setup_logging()
     await init_pool()
     await run_migrations()
     yield
@@ -41,6 +39,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Lumen", lifespan=lifespan)
+setup_tracing(app)
 
 app.middleware("http")(attach_user)
 
