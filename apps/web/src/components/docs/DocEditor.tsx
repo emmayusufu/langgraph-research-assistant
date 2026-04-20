@@ -9,10 +9,16 @@ import { Extension } from "@tiptap/core";
 import { yCursorPlugin } from "@tiptap/y-tiptap";
 import Placeholder from "@tiptap/extension-placeholder";
 import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
-import { HocuspocusProvider } from "@hocuspocus/provider";
+import Image from "@tiptap/extension-image";
+import { Table } from "@tiptap/extension-table";
+import { TableRow } from "@tiptap/extension-table-row";
+import { TableHeader } from "@tiptap/extension-table-header";
+import { TableCell } from "@tiptap/extension-table-cell";
+import type { HocuspocusProvider } from "@hocuspocus/provider";
 import { createLowlight, common } from "lowlight";
 import { CodeBlock } from "./CodeBlock";
 import { AIPanel } from "./ai/AIPanel";
+import { uploadImage } from "@/lib/api";
 import Box from "@mui/material/Box";
 import Divider from "@mui/material/Divider";
 import IconButton from "@mui/material/IconButton";
@@ -26,12 +32,16 @@ import FormatListBulletedRoundedIcon from "@mui/icons-material/FormatListBullete
 import FormatListNumberedRoundedIcon from "@mui/icons-material/FormatListNumberedRounded";
 import FormatQuoteRoundedIcon from "@mui/icons-material/FormatQuoteRounded";
 import FormatStrikethroughIcon from "@mui/icons-material/FormatStrikethrough";
+import ImageOutlinedIcon from "@mui/icons-material/ImageOutlined";
 import NotesRoundedIcon from "@mui/icons-material/NotesRounded";
+import TableChartOutlinedIcon from "@mui/icons-material/TableChartOutlined";
+import DeleteOutlineRoundedIcon from "@mui/icons-material/DeleteOutlineRounded";
+import AddRoundedIcon from "@mui/icons-material/AddRounded";
+import RemoveRoundedIcon from "@mui/icons-material/RemoveRounded";
+import Tooltip from "@mui/material/Tooltip";
 import type { Editor } from "@tiptap/react";
 import { extractCursorContext, extractSelectionContext } from "@/lib/editor-context";
 import { looksLikeMarkdown, markdownToHtml } from "@/lib/markdown";
-
-const COLLAB_URL = process.env.NEXT_PUBLIC_COLLAB_URL ?? "ws://localhost:1234";
 
 const CURSOR_COLORS = ["#8B9B6E", "#B8804A", "#6E8B9B", "#9B6E8B", "#6E9B8B", "#9B8B6E"];
 
@@ -55,10 +65,11 @@ const CollaborationCursorExt = Extension.create<{ provider: HocuspocusProvider |
 });
 
 interface DocEditorProps {
-  docId: string;
   content: string;
   readOnly: boolean;
   user?: { id: string; name: string };
+  provider: HocuspocusProvider | null;
+  synced: boolean;
   onContentSave: (content: string) => void;
   onContentChange?: (content: string) => void;
   onAskAI?: () => void;
@@ -127,6 +138,49 @@ const editorSx = {
     "& li + li": { mt: 0.375 },
     "& p": { my: 0.75 },
     "& p:first-of-type": { mt: 0 },
+    "& img.lumen-img": {
+      maxWidth: "100%",
+      height: "auto",
+      borderRadius: "6px",
+      display: "block",
+      my: 1.5,
+    },
+    "& .tableWrapper": {
+      overflowX: "auto",
+      my: 1.5,
+    },
+    "& .tableWrapper table": {
+      width: "100%",
+      borderCollapse: "collapse",
+      tableLayout: "fixed",
+      "& td, & th": {
+        border: "1px solid",
+        borderColor: "divider",
+        padding: "8px 12px",
+        verticalAlign: "top",
+        position: "relative",
+        "& > *": { mt: 0, mb: 0 },
+      },
+      "& th": {
+        backgroundColor: "action.hover",
+        fontWeight: 700,
+        textAlign: "left",
+      },
+      "& .selectedCell": {
+        backgroundColor: "rgba(139,155,110,0.12)",
+      },
+      "& .column-resize-handle": {
+        position: "absolute",
+        right: "-2px",
+        top: 0,
+        bottom: 0,
+        width: "4px",
+        backgroundColor: "primary.main",
+        opacity: 0.25,
+        pointerEvents: "none",
+      },
+    },
+    "&.resize-cursor": { cursor: "col-resize" },
   },
 };
 
@@ -170,6 +224,7 @@ const BASE_BLOCK_GROUPS: BlockGroup[] = [
     items: [
       { label: "Code block", hint: "Monospace", Icon: CodeRoundedIcon, cmd: withSlashDelete((e) => e.chain().focus().toggleCodeBlock().run()) },
       { label: "Quote", hint: "Callout", Icon: FormatQuoteRoundedIcon, cmd: withSlashDelete((e) => e.chain().focus().toggleBlockquote().run()) },
+      { label: "Table", hint: "3×3 grid", Icon: TableChartOutlinedIcon, cmd: withSlashDelete((e) => e.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()) },
     ],
   },
 ];
@@ -186,37 +241,16 @@ const LumenCodeBlock = CodeBlockLowlight.extend({
   },
 });
 
-export function DocEditor({ docId, content, readOnly, user, onContentSave, onContentChange, onAskAI }: DocEditorProps) {
+export function DocEditor({ content, readOnly, user, provider, synced, onContentSave, onContentChange, onAskAI }: DocEditorProps) {
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSaved = useRef<string>(content);
-  const [wsToken, setWsToken] = useState<string | null>(null);
-  const [provider, setProvider] = useState<HocuspocusProvider | null>(null);
-  const [synced, setSynced] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [aiAnchor, setAiAnchor] = useState<{ nodeType: 1; getBoundingClientRect: () => DOMRect } | null>(null);
   const [aiOpen, setAiOpen] = useState(false);
   const [aiMode, setAiMode] = useState<"selection" | "generate">("selection");
   const [aiSelection, setAiSelection] = useState("");
   const [aiContext, setAiContext] = useState("");
   const [aiRange, setAiRange] = useState<{ from: number; to: number } | null>(null);
-
-  useEffect(() => {
-    fetch("/api/backend/api/v1/auth/ws-token")
-      .then((r) => r.json())
-      .then((d: { token: string }) => setWsToken(d.token))
-      .catch(() => {});
-  }, []);
-
-  useEffect(() => {
-    if (!wsToken) return;
-    const p = new HocuspocusProvider({
-      url: COLLAB_URL,
-      name: docId,
-      token: wsToken,
-      onSynced: () => setSynced(true),
-    });
-    setProvider(p);
-    return () => { p.destroy(); setProvider(null); setSynced(false); };
-  }, [wsToken, docId]);
 
   const flushSave = (html: string) => {
     if (saveTimer.current) {
@@ -245,6 +279,11 @@ export function DocEditor({ docId, content, readOnly, user, onContentSave, onCon
       StarterKit.configure({ codeBlock: false }),
       LumenCodeBlock.configure({ lowlight }),
       Placeholder.configure({ placeholder: "Start writing, or type '/' for commands…", showOnlyCurrent: true }),
+      Image.configure({ HTMLAttributes: { class: "lumen-img" } }),
+      Table.configure({ resizable: true, HTMLAttributes: { class: "lumen-table" } }),
+      TableRow,
+      TableHeader,
+      TableCell,
       ...(provider ? [
         Collaboration.configure({ document: provider.document }),
         CollaborationCursorExt.configure({
@@ -256,6 +295,38 @@ export function DocEditor({ docId, content, readOnly, user, onContentSave, onCon
     content: provider ? undefined : content,
     editable: !readOnly,
     immediatelyRender: false,
+    editorProps: {
+      handlePaste: (view, event) => {
+        const files = Array.from(event.clipboardData?.files ?? []).filter((f) => f.type.startsWith("image/"));
+        if (files.length === 0) return false;
+        event.preventDefault();
+        void Promise.all(files.map(uploadImage)).then((urls) => {
+          urls.forEach((url) => {
+            view.dispatch(
+              view.state.tr.replaceSelectionWith(
+                view.state.schema.nodes.image.create({ src: url }),
+              ),
+            );
+          });
+        });
+        return true;
+      },
+      handleDrop: (view, event) => {
+        const files = Array.from(event.dataTransfer?.files ?? []).filter((f) => f.type.startsWith("image/"));
+        if (files.length === 0) return false;
+        event.preventDefault();
+        const coords = view.posAtCoords({ left: event.clientX, top: event.clientY });
+        const pos = coords?.pos ?? view.state.selection.from;
+        void Promise.all(files.map(uploadImage)).then((urls) => {
+          urls.forEach((url) => {
+            view.dispatch(
+              view.state.tr.insert(pos, view.state.schema.nodes.image.create({ src: url })),
+            );
+          });
+        });
+        return true;
+      },
+    },
     onUpdate: ({ editor: e }) => {
       const html = e.getHTML();
       onContentChange?.(html);
@@ -368,13 +439,27 @@ export function DocEditor({ docId, content, readOnly, user, onContentSave, onCon
         ],
       },
       ...BASE_BLOCK_GROUPS,
+      {
+        label: "Media",
+        items: [
+          {
+            label: "Image",
+            hint: "Upload from device",
+            Icon: ImageOutlinedIcon,
+            cmd: withSlashDelete(() => fileInputRef.current?.click()),
+          },
+        ],
+      },
     ],
     [editor],
   );
 
   return (
     <Box sx={editorSx}>
-      {editor !== null && <BubbleMenu editor={editor}>
+      {editor !== null && <BubbleMenu
+        editor={editor}
+        shouldShow={({ editor: e, state }) => !state.selection.empty && !e.isActive("table")}
+      >
         <Paper
           elevation={0}
           sx={(theme) => ({
@@ -445,6 +530,60 @@ export function DocEditor({ docId, content, readOnly, user, onContentSave, onCon
           ))}
         </Paper>
       </BubbleMenu>}
+
+      {editor !== null && !readOnly && (
+        <BubbleMenu
+          editor={editor}
+          shouldShow={({ editor: e }) => e.isActive("table")}
+        >
+          <Paper
+            elevation={0}
+            sx={(theme) => ({
+              display: "flex",
+              p: 0.5,
+              gap: 0.25,
+              borderRadius: "9px",
+              border: "1px solid",
+              borderColor: "divider",
+              backdropFilter: "blur(16px)",
+              bgcolor: "rgba(255,255,255,0.92)",
+              boxShadow: "0 4px 24px rgba(0,0,0,0.1)",
+              ...theme.applyStyles("dark", { backgroundColor: "rgba(28,28,28,0.88)" }),
+            })}
+          >
+            {[
+              { label: "Add column", Icon: AddRoundedIcon, suffix: "col", fn: (e: Editor) => e.chain().focus().addColumnAfter().run() },
+              { label: "Add row", Icon: AddRoundedIcon, suffix: "row", fn: (e: Editor) => e.chain().focus().addRowAfter().run() },
+              { label: "Delete column", Icon: RemoveRoundedIcon, suffix: "col", fn: (e: Editor) => e.chain().focus().deleteColumn().run() },
+              { label: "Delete row", Icon: RemoveRoundedIcon, suffix: "row", fn: (e: Editor) => e.chain().focus().deleteRow().run() },
+              { label: "Delete table", Icon: DeleteOutlineRoundedIcon, suffix: "", fn: (e: Editor) => e.chain().focus().deleteTable().run(), danger: true },
+            ].map(({ label, Icon, suffix, fn, danger }) => (
+              <Tooltip key={label} title={label} arrow>
+                <IconButton
+                  size="small"
+                  onClick={() => editor && fn(editor)}
+                  sx={{
+                    p: 0.625,
+                    borderRadius: "6px",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 0.25,
+                    color: danger ? "error.main" : "text.secondary",
+                    "&:hover": { bgcolor: "action.hover", color: danger ? "error.main" : "text.primary" },
+                  }}
+                >
+                  <Icon sx={{ fontSize: 14 }} />
+                  {suffix && (
+                    <Typography sx={{ fontSize: "0.68rem", fontWeight: 700, letterSpacing: "0.02em" }}>
+                      {suffix}
+                    </Typography>
+                  )}
+                </IconButton>
+              </Tooltip>
+            ))}
+          </Paper>
+        </BubbleMenu>
+      )}
 
       {!readOnly && editor !== null && (
         <FloatingMenu
@@ -518,6 +657,24 @@ export function DocEditor({ docId, content, readOnly, user, onContentSave, onCon
       )}
 
       <EditorContent editor={editor} />
+
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml"
+        style={{ display: "none" }}
+        onChange={async (e) => {
+          const file = e.target.files?.[0];
+          e.target.value = "";
+          if (!file || !editor) return;
+          try {
+            const url = await uploadImage(file);
+            editor.chain().focus().setImage({ src: url }).run();
+          } catch (err) {
+            console.error(err);
+          }
+        }}
+      />
 
       <AIPanel
         open={aiOpen}

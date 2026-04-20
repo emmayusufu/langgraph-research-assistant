@@ -10,12 +10,15 @@ import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
 import AutoAwesomeRoundedIcon from "@mui/icons-material/AutoAwesomeRounded";
 import { DocEditor } from "@/components/docs/DocEditor";
+import { DocMenu } from "@/components/docs/DocMenu";
 import { DocResearchPanel } from "@/components/docs/DocResearchPanel";
 import { DocSidebar } from "@/components/docs/DocSidebar";
+import { PresenceAvatars } from "@/components/docs/PresenceAvatars";
 import { ShareButton } from "@/components/docs/ShareButton";
 import { useDoc } from "@/hooks/useDoc";
 import { useDocs } from "@/hooks/useDocs";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { useCollabProvider } from "@/hooks/useCollabProvider";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -44,6 +47,7 @@ export default function DocPage({ params }: Props) {
   const { doc, isSaving, saveTitle, saveContent, addCollaborator, updateCollaboratorRole, removeCollaborator, updateVisibility, saveError, clearSaveError } = useDoc(id);
   const { docs, createDoc, refresh: refreshDocs } = useDocs();
   const currentUser = useCurrentUser();
+  const { provider, synced } = useCollabProvider(id);
   const [researchOpen, setResearchOpen] = useState(false);
   const [creating, setCreating] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -168,7 +172,8 @@ export default function DocPage({ params }: Props) {
             </Box>
           </Box>
 
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+            <PresenceAvatars provider={provider} currentUserName={currentUser?.name} />
             {canEdit && (
               <Tooltip title="Ask AI  ⌘K">
                 <IconButton
@@ -196,6 +201,7 @@ export default function DocPage({ params }: Props) {
               onRemove={removeCollaborator}
               onUpdateVisibility={updateVisibility}
             />
+            <DocMenu docId={id} title={doc.title} html={liveContent ?? doc.content} />
           </Box>
         </Box>
 
@@ -304,10 +310,11 @@ export default function DocPage({ params }: Props) {
             />
 
             <DocEditor
-              docId={id}
               content={doc.content}
               readOnly={!canEdit}
               user={currentUser ?? undefined}
+              provider={provider}
+              synced={synced}
               onContentSave={saveContent}
               onContentChange={setLiveContent}
               onAskAI={canEdit ? () => setResearchOpen(true) : undefined}

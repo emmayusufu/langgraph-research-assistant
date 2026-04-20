@@ -204,6 +204,29 @@ export async function updateDocVisibility(docId: string, visibility: "private" |
   if (!response.ok) throw new Error(`Failed to update visibility: ${response.statusText}`);
 }
 
+export async function uploadImage(file: File): Promise<string> {
+  const presignRes = await apiFetch(`${API_BASE}/api/v1/uploads/presign`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ content_type: file.type, kind: "image" }),
+  });
+  if (!presignRes.ok) throw new Error(`Presign failed: ${presignRes.statusText}`);
+  const { put_url, public_url, max_bytes } = await presignRes.json();
+
+  if (file.size > max_bytes) {
+    throw new Error(`Image too large. Max ${Math.floor(max_bytes / 1024 / 1024)}MB`);
+  }
+
+  const putRes = await fetch(put_url, {
+    method: "PUT",
+    headers: { "Content-Type": file.type },
+    body: file,
+  });
+  if (!putRes.ok) throw new Error(`Upload failed: ${putRes.statusText}`);
+
+  return public_url;
+}
+
 export type InlineAction =
   | "improve"
   | "shorter"
