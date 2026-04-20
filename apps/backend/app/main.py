@@ -15,6 +15,7 @@ from app.middleware.ratelimit import rate_limit
 from app.models.user import User
 from app.routers.ai import router as ai_router
 from app.routers.auth import router as auth_router
+from app.routers.comments import router as comments_router, thread_router as comment_thread_router
 from app.routers.docs import collab_router, router as docs_router
 from app.routers.sessions import router as sessions_router
 from app.routers.settings import router as settings_router
@@ -50,6 +51,8 @@ app.include_router(users_router)
 app.include_router(ai_router)
 app.include_router(settings_router)
 app.include_router(uploads_router)
+app.include_router(comments_router)
+app.include_router(comment_thread_router)
 
 
 def _initial_state(query: str) -> dict:
