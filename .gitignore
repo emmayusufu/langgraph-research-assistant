@@ -47,5 +47,6 @@ temp/
 # Playwright / test artifacts
 .playwright-mcp/
 
-# Screenshots
+# Screenshots (transient ones in repo root, but allow docs/)
 *.png
+!docs/screenshots/*.png
